@@ -1,8 +1,8 @@
 package com.windwoif.balance;
 
-public record Chemical(String name, State state, int enthalpy, float entropy, float MolarVolume, float MolarHeatCapacity) {
+public record Chemical(String name, State state, int enthalpy, float entropy, float MolarVolume, float MolarHeatCapacity, float molarMass) {
     public enum State {
-        SOLID, LIQUID, GAS, AQUEOUS
+        SOLID, LIQUID_POLAR, LIQUID_NONPOLAR, GAS, AQUEOUS, ORGANIC, MOLTEN_SALT, MOLTEN_METAL
     }
 
     public double getGf(float temperature) {

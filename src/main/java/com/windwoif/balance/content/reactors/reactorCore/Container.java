@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.RegistryManager;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,73 +22,102 @@ public class Container {
     protected float heat;
     private final int Volume;
     private final int BasicHeatCapacity;
-    private float heatCapacity;
 
     public Container(int volume, int temp, int heatCapacity){
         Volume = volume;
         BasicHeatCapacity = heatCapacity;
         heat = temp * heatCapacity;
         temperature = temp;
+        Phase liquidPolarPhase = new Phase(Chemical.State.LIQUID_POLAR);
+        Phase liquidNonpolarPhase = new Phase(Chemical.State.LIQUID_NONPOLAR);
+        phases.put(Chemical.State.SOLID, new Phase(Chemical.State.SOLID));
+        phases.put(Chemical.State.LIQUID_POLAR, liquidPolarPhase);
+        phases.put(Chemical.State.AQUEOUS, liquidPolarPhase);
+        phases.put(Chemical.State.LIQUID_NONPOLAR, liquidNonpolarPhase);
+        phases.put(Chemical.State.ORGANIC, liquidNonpolarPhase);
+        phases.put(Chemical.State.GAS, new Phase(Chemical.State.GAS));
+        phases.put(Chemical.State.MOLTEN_SALT, new Phase(Chemical.State.MOLTEN_SALT));
+        phases.put(Chemical.State.MOLTEN_METAL, new Phase(Chemical.State.MOLTEN_METAL));
     }
     private Runnable markChangedCallback;
     public void setMarkChangedCallback(Runnable callback) {
         this.markChangedCallback = callback;
     }
+    protected void markChanged() {
+        if (markChangedCallback != null) markChangedCallback.run();
+    }
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public void tick(){
-        heatCapacity = calculateHeatCapacity();
-        temperature = heat / heatCapacity;
+        updateTemp();
+        updateVolume();
     }
 
+    private void updateTemp() {
+        float heatCapacity = calculateHeatCapacity();
+        temperature = heat / heatCapacity;
+    }
     private float calculateHeatCapacity(){
         return BasicHeatCapacity + contents.entrySet().stream()
                 .map(a -> a.getKey().getHeatCapacity(a.getValue()))
                 .reduce(0f, Float::sum);
     }
 
-    protected void markChanged() {
-        if (markChangedCallback != null) markChangedCallback.run();
+    private final Map<Chemical, Integer> contents = new HashMap<>();
+
+    private final EnumMap<Chemical.State, Phase> phases = new EnumMap<>(Chemical.State.class);
+
+    public Phase getPhase(Chemical.State state) {
+        return phases.get(state);
     }
 
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private Map<Chemical, Integer> getChemicalMap(Chemical.State state) {
+        return getPhase(state).getContents();
+    }
+    public double getContentVolume(Chemical.State state) {
+        return getPhase(state).getVolume();
+    }
 
-    private final Map<Chemical, Integer> contents = new HashMap<>();
-    private final Map<Chemical, Integer> solids = new HashMap<>();
-    private final Map<Chemical, Integer> liquids = new HashMap<>();
-    private final Map<Chemical, Integer> gases = new HashMap<>();
-    private final Map<Chemical, Integer> aqueous = new HashMap<>();
+    private void updateVolume(){
+        phases.forEach((state, phase) -> phase.updateVolume());
+        double occupiedVolume = phases.values().stream().mapToDouble(Phase::getVolume).sum();
+        phases.get(Chemical.State.GAS).setVolume(Volume - occupiedVolume);
+    }
 
+    private void syncStateMaps() {
+        phases.forEach((state, phase) -> phase.clear());
+        contents.forEach(this::updateStateMaps);
+    }
     public void updateStateMaps(Chemical chemical, int amount) {
-        Map<Chemical, Integer> targetMap = switch(chemical.state()) {
-            case SOLID -> solids;
-            case LIQUID -> liquids;
-            case GAS -> gases;
-            case AQUEOUS -> aqueous;
-        };
-
+        Map<Chemical, Integer> targetMap = getChemicalMap(chemical.state());
         if (amount > 0) {
             targetMap.put(chemical, amount);
         }
     }
-    private void syncStateMaps() {
-        solids.clear(); liquids.clear(); gases.clear(); aqueous.clear();
-        contents.forEach(this::updateStateMaps);
-    }
-    public double calculateTotalVolume() {
-        double totalVolume = 0.0;
-        for (Map.Entry<Chemical, Integer> entry : contents.entrySet()) {
-            totalVolume += entry.getKey().getEffectiveVolume(entry.getValue());
-        }
-        return Math.max(totalVolume, 0.001); // At least 1 mL
-    }
-    public double calculateLiquidVolume() {
 
-        double liquidVolume = 0.0;
-        for (Map.Entry<Chemical, Integer> entry : liquids.entrySet()) {
-            liquidVolume += entry.getKey().getEffectiveVolume(entry.getValue());
-        }
-        return liquidVolume;
+    public void changeChemical(Chemical chemical, int amount) {
+        contents.merge(chemical, amount, Integer::sum);
+        if (contents.getOrDefault(chemical,0) < 0) LOGGER.error("Overcost chemicals");
+        updateStateMaps(chemical, contents.get(chemical));
+        markChanged();
     }
+
+    public double getConcentration(Chemical chemical) {
+        double amount = GetChemical(chemical);
+        return switch (chemical.state()) {
+            case ORGANIC, AQUEOUS, GAS -> amount / getContentVolume(chemical.state());
+            default -> 1;
+        };
+    }
+
+    public Component check() {
+        if (contents.isEmpty()) return Component.literal("Empty");
+        MutableComponent message = Component.literal("Content:\n");
+        contents.forEach((chemical, amount) ->
+                message.append(Component.literal(String.format("- %s: %d mol\n", chemical.name(), amount/1000))));
+        return message;
+    }
+
     public void LoadChemicals(ListTag chemicalsList) {
         contents.clear();
         syncStateMaps();
@@ -117,28 +147,6 @@ public class Container {
         });
         return chemicalsList;
     }
-    public double getConcentration(Chemical chemical) {
-        double amount = GetChemical(chemical);
-        if (chemical.state() == Chemical.State.LIQUID) {
-            return amount / calculateLiquidVolume();
-        } else if (chemical.state() == Chemical.State.GAS) {
-            return amount / (Volume - calculateTotalVolume());
-        }
-        return 1;
-    }
-    public Component check() {
-        if (contents.isEmpty()) return Component.literal("Empty");
-        MutableComponent message = Component.literal("Content:\n");
-        contents.forEach((chemical, amount) ->
-                message.append(Component.literal(String.format("- %s: %d mol\n", chemical.name(), amount/1000))));
-        return message;
-    }
-    public void changeChemical(Chemical chemical, int amount) {
-        contents.merge(chemical, amount, Integer::sum);
-        if (contents.getOrDefault(chemical,0) < 0) LOGGER.error("Overcost chemicals");
-        updateStateMaps(chemical, contents.get(chemical));
-        markChanged();
-    }
     public Component testFill() {
 //        changeChemical(Chemicals.NAOH.get(), 1000000);
 //        changeChemical(Chemicals.HCL.get(), 1000000);
@@ -157,6 +165,5 @@ public class Container {
     public int getVolume() {
         return Volume;
     }
-    public void setTemperature(int temperature) { this.temperature = temperature; }
     public float getTemperature() { return temperature; }
 }

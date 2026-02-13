@@ -3,14 +3,13 @@ package com.windwoif.balance.content.reactors.reactorCore;
 import com.windwoif.balance.Balance;
 import com.windwoif.balance.Chemical;
 import com.windwoif.balance.Reaction;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.RegistryManager;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,16 +26,17 @@ public class Reactor extends Container {
         tick();
         Map<Chemical, Integer> finalChange = getFinalChange(getTotalReactPlan(timeStep));
         finalChange.forEach(this::changeChemical);
-        int heatChange = finalChange.entrySet().stream()
-                .mapToInt(entry -> entry.getKey().enthalpy() * entry.getValue())
-                .sum();
-        heat += heatChange;
+        updateHeat(finalChange);
         markChanged();
     }
 
+    private void updateHeat(Map<Chemical, Integer> finalChange) {
+        heat += finalChange.entrySet().stream()
+                .mapToInt(entry -> entry.getKey().enthalpy() * entry.getValue())
+                .sum();
+    }
+
     private Map<Reaction, Double> getReactPlan(List<Reaction> stepReactions, float time) {
-        double liquidVolume = calculateLiquidVolume();
-        double gasVolume = getVolume() - calculateTotalVolume();
         return stepReactions.stream()
                 .collect(Collectors.toMap(
                         Function.identity(),
@@ -46,10 +46,11 @@ public class Reactor extends Container {
                             double forwardRate = calculatePartRate(k_forwardRate, reaction.getReactants());
                             double backwardRate = calculatePartRate(k_forwardRate / equilibrium, reaction.getProducts());
                             double totalRate = (forwardRate - backwardRate) * time * switch(reaction.state) {
-                                case LIQUID -> liquidVolume;
-                                case GAS -> gasVolume;
+                                case LIQUID_NONPOLAR -> getContentVolume(Chemical.State.LIQUID_NONPOLAR);
+                                case LIQUID_POLAR ->  getContentVolume(Chemical.State.LIQUID_POLAR);
+                                case GAS ->  getContentVolume(Chemical.State.GAS);
+                                case SOLID ->  getContentVolume(Chemical.State.SOLID);
                             };
-
                             return totalRate;
                         }
                 ));
@@ -64,14 +65,14 @@ public class Reactor extends Container {
     private Map<Chemical, Double> getTotalChange(@NotNull Map<Reaction, Double> reactPlan){
         return reactPlan.entrySet().stream()
                 .flatMap(reactionEntry -> reactionEntry.getKey().getTotalReaction().entrySet().stream()
-                        .map(entry -> Map.entry(entry.getKey(), entry.getValue() * reactionEntry.getValue())))
+                        .map(entry -> Map.entry(entry.getKey(), entry.getValue() * reactionEntry.getValue())))//TODO: restructure
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
                         Collectors.summingDouble(Map.Entry::getValue)));
     }
     private Map<Chemical, Integer> getFinalChange(@NotNull Map<Reaction, Integer> reactPlan){
         return reactPlan.entrySet().stream()
                 .flatMap(reactionEntry -> reactionEntry.getKey().getTotalReaction().entrySet().stream()
-                        .map(entry -> Map.entry(entry.getKey(), entry.getValue() * reactionEntry.getValue())))
+                        .map(entry -> Map.entry(entry.getKey(), entry.getValue() * reactionEntry.getValue())))//TODO: restructure
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
                         Collectors.summingInt(Map.Entry::getValue)));
     }
@@ -92,7 +93,7 @@ public class Reactor extends Container {
                 .filter(entry -> !(entry.getValue() > 0 ?
                         entry.getKey().getReactants().containsKey(lackingChemical.getKey()) :
                         entry.getKey().getProducts().containsKey(lackingChemical.getKey())))
-                .map(entry -> Map.entry(entry.getKey(), entry.getValue() * (1 - lackingChemical.getValue())))
+                .map(entry -> Map.entry(entry.getKey(), entry.getValue() * (1 - lackingChemical.getValue())))//TODO: restructure
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
@@ -101,7 +102,7 @@ public class Reactor extends Container {
                         .map(chemicalEntry -> Map.entry(chemicalEntry.getKey(),
                                 chemicalEntry.getValue() * ratio)
                         )
-                )
+                )//TODO: restructure
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
@@ -135,30 +136,30 @@ public class Reactor extends Container {
     public List<Reaction> getUsableReactions() { return usableReactions; }
 
 
-    public Component displayReactionPlan() {
-        Map<Reaction, Integer> reactionPlan = getTotalReactPlan(0.05f);
-        if (reactionPlan.isEmpty()) {
-            return Component.literal("No reaction plans");
-        }
-
-        MutableComponent message = Component.literal("Reaction Plans:\n");
-
-        IForgeRegistry<Reaction> reactionRegistry = RegistryManager.ACTIVE.getRegistry(Balance.REACTION_REGISTRY_KEY);
-
-        for (Map.Entry<Reaction, Integer> entry : reactionPlan.entrySet()) {
-            Reaction reaction = entry.getKey();
-            Integer amount = entry.getValue();
-
-
-            ResourceLocation reactionId = reactionRegistry.getKey(reaction);
-            String reactionName = reactionId != null ? reactionId.toString() : "Unknown Reaction";
-
-            message.append(Component.literal(
-                    String.format("- %s: %d mol\n", reactionName, amount)
-            ));
-        }
-
-        return message;
-    }
+//    public Component displayReactionPlan() {
+//        Map<Reaction, Integer> reactionPlan = getTotalReactPlan(0.05f);
+//        if (reactionPlan.isEmpty()) {
+//            return Component.literal("No reaction plans");
+//        }
+//
+//        MutableComponent message = Component.literal("Reaction Plans:\n");
+//
+//        IForgeRegistry<Reaction> reactionRegistry = RegistryManager.ACTIVE.getRegistry(Balance.REACTION_REGISTRY_KEY);
+//
+//        for (Map.Entry<Reaction, Integer> entry : reactionPlan.entrySet()) {
+//            Reaction reaction = entry.getKey();
+//            Integer amount = entry.getValue();
+//
+//
+//            ResourceLocation reactionId = reactionRegistry.getKey(reaction);
+//            String reactionName = reactionId != null ? reactionId.toString() : "Unknown Reaction";
+//
+//            message.append(Component.literal(
+//                    String.format("- %s: %d mol\n", reactionName, amount)
+//            ));
+//        }
+//
+//        return message;
+//    }
 
 }

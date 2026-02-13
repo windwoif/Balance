@@ -2,6 +2,7 @@ package com.windwoif.balance.content.reactors.debugReactor;
 
 import com.windwoif.balance.AllBlockEntityTypes;
 import com.windwoif.balance.Balance;
+import com.windwoif.balance.Chemical;
 import com.windwoif.balance.Reaction;
 import com.windwoif.balance.content.reactors.reactorCore.Reactor;
 import net.minecraft.core.BlockPos;
@@ -41,7 +42,7 @@ public class DebugBlockEntity extends BlockEntity {
     public void tick() {
         if (level != null && !level.isClientSide()) {
             Reactor.tick(0.05f);
-            if (Reactor.calculateTotalVolume() > Reactor.getVolume()) {
+            if (Reactor.getContentVolume(Chemical.State.GAS) <= 0) {
                 level.explode(
                         null,
                         getBlockPos().getX() + 0.5,
@@ -70,9 +71,9 @@ public class DebugBlockEntity extends BlockEntity {
         }
     }
 
-    public Component check1() {
-        return Reactor.displayReactionPlan();
-    }
+//    public Component check1() {
+//        return Reactor.displayReactionPlan();
+//    }
 
     public Component check2() {
         return Reactor.check();
