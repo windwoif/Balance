@@ -6,9 +6,11 @@ import com.simibubi.create.content.schematics.requirement.ItemRequirement;
 import com.simibubi.create.content.schematics.requirement.ItemRequirement.ItemUseType;
 import com.windwoif.balance.AllEntityTypes;
 import com.windwoif.balance.AllItems;
+import com.windwoif.balance.Chemical;
 import net.createmod.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
@@ -31,6 +33,8 @@ import net.minecraftforge.network.NetworkHooks;
 
 public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData, SpecialEntityItemRequirement {
 
+    private Reactor reactor;
+
     public static AABB span(BlockPos startPos, BlockPos endPos) {
         return new AABB(startPos, endPos).expandTowards(1, 1, 1);
     }
@@ -43,6 +47,7 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
         this(AllEntityTypes.REACTOR_ENTITY.get(), world);
         setBoundingBox(boundingBox);
         resetPositionToBB();
+        reactor = new Reactor(10000,298,10000);
     }
 
     public void resetPositionToBB() {
@@ -69,6 +74,11 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
 
         if (getBoundingBox().getXsize() == 0)
             discard();
+        reactor.tick(0.05f);
+    }
+
+    public void addChemical(Chemical chemical, long amount) {
+        if (reactor != null) reactor.changeChemical(chemical, amount);
     }
 
     @Override
@@ -115,12 +125,19 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
     public void addAdditionalSaveData(CompoundTag compound) {
         Vec3 position = position();
         writeBoundingBox(compound, getBoundingBox().move(position.scale(-1)));
+        ListTag chemicalsList = reactor.SaveChemicals();
+        compound.put("Chemicals", chemicalsList);
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag compound) {
         Vec3 position = position();
         setBoundingBox(readBoundingBox(compound).move(position));
+        reactor = new Reactor(10000,298,10000);
+        if (compound.contains("Chemicals", Tag.TAG_LIST)) {
+            ListTag chemicalsList = compound.getList("Chemicals", Tag.TAG_COMPOUND);
+            reactor.LoadChemicals(chemicalsList);
+        }
     }
 
     public static void writeBoundingBox(CompoundTag compound, AABB bb) {

@@ -3,8 +3,13 @@ package com.windwoif.balance.content.reactors.reactorCore;
 import com.windwoif.balance.Balance;
 import com.windwoif.balance.Chemical;
 import com.windwoif.balance.Reaction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.RegistryManager;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,21 +23,21 @@ public class Reactor extends Container {
 
     private List<Reaction> usableReactions = new ArrayList<>(RegistryManager.ACTIVE.getRegistry(Balance.REACTION_REGISTRY_KEY).getValues());
 
-    public Reactor(int volume,  int temperature, int heatCapacity) {
+    public Reactor(long volume,  long temperature, long heatCapacity) {
         super(volume, temperature, heatCapacity);
     }
 
     public void tick(float timeStep) {
         tick();
-        Map<Chemical, Integer> finalChange = getFinalChange(getTotalReactPlan(timeStep));
+        Map<Chemical, Long> finalChange = getFinalChange(getTotalReactPlan(timeStep));
         finalChange.forEach(this::changeChemical);
         updateHeat(finalChange);
         markChanged();
     }
 
-    private void updateHeat(Map<Chemical, Integer> finalChange) {
+    private void updateHeat(Map<Chemical, Long> finalChange) {
         heat += finalChange.entrySet().stream()
-                .mapToInt(entry -> entry.getKey().enthalpy() * entry.getValue())
+                .mapToLong(entry -> entry.getKey().enthalpy() * entry.getValue())
                 .sum();
     }
 
@@ -69,14 +74,15 @@ public class Reactor extends Container {
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
                         Collectors.summingDouble(Map.Entry::getValue)));
     }
-    private Map<Chemical, Integer> getFinalChange(@NotNull Map<Reaction, Integer> reactPlan){
+    private Map<Chemical, Long> getFinalChange(@NotNull Map<Reaction, Long> reactPlan){
         return reactPlan.entrySet().stream()
                 .flatMap(reactionEntry -> reactionEntry.getKey().getTotalReaction().entrySet().stream()
                         .map(entry -> Map.entry(entry.getKey(), entry.getValue() * reactionEntry.getValue())))//TODO: restructure
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
-                        Collectors.summingInt(Map.Entry::getValue)));
+                        Collectors.summingLong(Map.Entry::getValue)));
     }
 
+    @Nullable
     private Map.Entry<Chemical, Double> getLackingChemical(@NotNull Map<Reaction, Double> reactPlan) {
         return getTotalChange(reactPlan).entrySet().stream()
 
@@ -110,7 +116,7 @@ public class Reactor extends Container {
                 ));
     }
 
-    public Map<Reaction, Integer> getTotalReactPlan(float time){
+    public Map<Reaction, Long> getTotalReactPlan(float time){
         Map<Reaction, Double> totalReactPlan = new HashMap<>();
         Map<Reaction, Double> reactPlan = getReactPlan(usableReactions, time);
 
@@ -127,7 +133,7 @@ public class Reactor extends Container {
         return totalReactPlan.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        entry -> (int)(entry.getValue() * 1000)
+                        entry -> (long)(entry.getValue() * 1000)
                 ));
     }
 
@@ -136,30 +142,30 @@ public class Reactor extends Container {
     public List<Reaction> getUsableReactions() { return usableReactions; }
 
 
-//    public Component displayReactionPlan() {
-//        Map<Reaction, Integer> reactionPlan = getTotalReactPlan(0.05f);
-//        if (reactionPlan.isEmpty()) {
-//            return Component.literal("No reaction plans");
-//        }
-//
-//        MutableComponent message = Component.literal("Reaction Plans:\n");
-//
-//        IForgeRegistry<Reaction> reactionRegistry = RegistryManager.ACTIVE.getRegistry(Balance.REACTION_REGISTRY_KEY);
-//
-//        for (Map.Entry<Reaction, Integer> entry : reactionPlan.entrySet()) {
-//            Reaction reaction = entry.getKey();
-//            Integer amount = entry.getValue();
-//
-//
-//            ResourceLocation reactionId = reactionRegistry.getKey(reaction);
-//            String reactionName = reactionId != null ? reactionId.toString() : "Unknown Reaction";
-//
-//            message.append(Component.literal(
-//                    String.format("- %s: %d mol\n", reactionName, amount)
-//            ));
-//        }
-//
-//        return message;
-//    }
+    public Component displayReactionPlan() {
+        Map<Reaction, Long> reactionPlan = getTotalReactPlan(0.05f);
+        if (reactionPlan.isEmpty()) {
+            return Component.literal("No reaction plans");
+        }
+
+        MutableComponent message = Component.literal("Reaction Plans:\n");
+
+        IForgeRegistry<Reaction> reactionRegistry = RegistryManager.ACTIVE.getRegistry(Balance.REACTION_REGISTRY_KEY);
+
+        for (Map.Entry<Reaction, Long> entry : reactionPlan.entrySet()) {
+            Reaction reaction = entry.getKey();
+            Long amount = entry.getValue();
+
+
+            ResourceLocation reactionId = reactionRegistry.getKey(reaction);
+            String reactionName = reactionId != null ? reactionId.toString() : "Unknown Reaction";
+
+            message.append(Component.literal(
+                    String.format("- %s: %d mol\n", reactionName, amount)
+            ));
+        }
+
+        return message;
+    }
 
 }

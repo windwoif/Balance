@@ -57,11 +57,11 @@ public class DebugBlock extends Block implements EntityBlock {
                     player.displayClientMessage(message, false);
                     return InteractionResult.SUCCESS;
                 }
-//                else if (itemInHand.is(Items.STICK)) {
-//                    Component message = tank.check1();
-//                    player.displayClientMessage(message, false);
-//                    return InteractionResult.SUCCESS;
-//                }
+                else if (itemInHand.is(Items.STICK)) {
+                    Component message = tank.check1();
+                    player.displayClientMessage(message, false);
+                    return InteractionResult.SUCCESS;
+                }
                 else if (itemInHand.is(Items.WATER_BUCKET)) {
                     Component message = tank.fillTest();
                     player.displayClientMessage(message, false);

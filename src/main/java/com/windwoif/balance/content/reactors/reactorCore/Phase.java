@@ -10,12 +10,12 @@ public class Phase {
         this.state = state;
     }
     private final Chemical.State state;
-    private final Map<Chemical, Integer> contents = new HashMap<>();
+    private final Map<Chemical, Long> contents = new HashMap<>();
     private double volume;
     public void clear(){
         contents.clear();
     }
-    public Map<Chemical, Integer> getContents() {
+    public Map<Chemical, Long> getContents() {
         return contents;
     }
     public void updateVolume() {
@@ -28,4 +28,11 @@ public class Phase {
     public double getVolume() {
         return volume;
     }
+    public double getDensity() {
+        return contents.entrySet().stream().mapToDouble(a -> a.getKey().molarMass() * a.getValue() / 1000).sum() / volume;
+    }
+//    public double getColor() {
+//
+//
+//    }
 }

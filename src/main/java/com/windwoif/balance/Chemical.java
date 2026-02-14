@@ -1,6 +1,6 @@
 package com.windwoif.balance;
 
-public record Chemical(String name, State state, int enthalpy, float entropy, float MolarVolume, float MolarHeatCapacity, float molarMass) {
+public record Chemical(String name, State state, int enthalpy, float entropy, float MolarVolume, float MolarHeatCapacity, float molarMass, int ARGB) {
     public enum State {
         SOLID, LIQUID_POLAR, LIQUID_NONPOLAR, GAS, AQUEOUS, ORGANIC, MOLTEN_SALT, MOLTEN_METAL
     }
@@ -10,10 +10,10 @@ public record Chemical(String name, State state, int enthalpy, float entropy, fl
     }
 
     // Helper method to get effective volume for concentration calculations
-    public float getEffectiveVolume(int amount$) { //$ for 1000 times
+    public float getEffectiveVolume(long amount$) { //$ for 1000 times
         return (float) ((amount$ / 1000.0) * MolarVolume);
     }
-    public float getHeatCapacity(int amount$) {
+    public float getHeatCapacity(long amount$) {
         return (float) ((amount$ / 1000.0) * MolarHeatCapacity);
     }
 }

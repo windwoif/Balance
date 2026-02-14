@@ -1,8 +1,9 @@
 package com.windwoif.balance.content.reactors.reactorCore;
+
+import com.mojang.logging.LogUtils;
 import com.windwoif.balance.Balance;
 import com.windwoif.balance.Chemical;
-import org.slf4j.Logger;
-import com.mojang.logging.LogUtils;
+import com.windwoif.balance.Chemicals;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
@@ -10,6 +11,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.RegistryManager;
+import org.slf4j.Logger;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -18,12 +20,12 @@ import java.util.Map;
 import static com.windwoif.balance.Balance.CHEMICAL_REGISTRY_KEY;
 
 public class Container {
-    private float temperature;
+    private float temperature;//TODO
     protected float heat;
-    private final int Volume;
-    private final int BasicHeatCapacity;
+    private final long Volume;
+    private final long BasicHeatCapacity;
 
-    public Container(int volume, int temp, int heatCapacity){
+    public Container(long volume, long temp, long heatCapacity){
         Volume = volume;
         BasicHeatCapacity = heatCapacity;
         heat = temp * heatCapacity;
@@ -63,7 +65,7 @@ public class Container {
                 .reduce(0f, Float::sum);
     }
 
-    private final Map<Chemical, Integer> contents = new HashMap<>();
+    private final Map<Chemical, Long> contents = new HashMap<>();
 
     private final EnumMap<Chemical.State, Phase> phases = new EnumMap<>(Chemical.State.class);
 
@@ -71,7 +73,7 @@ public class Container {
         return phases.get(state);
     }
 
-    private Map<Chemical, Integer> getChemicalMap(Chemical.State state) {
+    private Map<Chemical, Long> getChemicalMap(Chemical.State state) {
         return getPhase(state).getContents();
     }
     public double getContentVolume(Chemical.State state) {
@@ -88,16 +90,16 @@ public class Container {
         phases.forEach((state, phase) -> phase.clear());
         contents.forEach(this::updateStateMaps);
     }
-    public void updateStateMaps(Chemical chemical, int amount) {
-        Map<Chemical, Integer> targetMap = getChemicalMap(chemical.state());
-        if (amount > 0) {
+    public void updateStateMaps(Chemical chemical, long amount) {
+        Map<Chemical, Long> targetMap = getChemicalMap(chemical.state());
+        if (amount >= 0) {
             targetMap.put(chemical, amount);
         }
     }
 
-    public void changeChemical(Chemical chemical, int amount) {
-        contents.merge(chemical, amount, Integer::sum);
-        if (contents.getOrDefault(chemical,0) < 0) LOGGER.error("Overcost chemicals");
+    public void changeChemical(Chemical chemical, long amount) {
+        contents.merge(chemical, amount, Long::sum);
+        if (contents.getOrDefault(chemical, 0L) < 0) LOGGER.error("Overcost chemicals");
         updateStateMaps(chemical, contents.get(chemical));
         markChanged();
     }
@@ -124,7 +126,7 @@ public class Container {
         for (int i = 0; i < chemicalsList.size(); i++) {
             CompoundTag chemicalTag = chemicalsList.getCompound(i);
             ResourceLocation chemicalId = ResourceLocation.parse(chemicalTag.getString("id"));
-            int amount = chemicalTag.getInt("amount");
+            long amount = chemicalTag.getLong("amount");
             IForgeRegistry<Chemical> registry = RegistryManager.ACTIVE.getRegistry(Balance.CHEMICAL_REGISTRY_KEY);
             Chemical chemical = registry.getValue(chemicalId);
             if (chemical != null) {
@@ -141,29 +143,30 @@ public class Container {
             if (chemicalId != null) {
                 CompoundTag chemicalTag = new CompoundTag();
                 chemicalTag.putString("id", chemicalId.toString());
-                chemicalTag.putInt("amount", amount);
+                chemicalTag.putLong("amount", amount);
                 chemicalsList.add(chemicalTag);
             }
         });
         return chemicalsList;
     }
-    public Component testFill() {
-//        changeChemical(Chemicals.NAOH.get(), 1000000);
-//        changeChemical(Chemicals.HCL.get(), 1000000);
-//        changeChemical(Chemicals.WATER.get(), 1000000);
+    public Component testFill() {//milk
+
+        changeChemical(Chemicals.WATER.get(), 1000000000000000000L);
         return Component.literal("filled with NO");
     }
     public Component testFill2() {
-//        changeChemical(Chemicals.NO2.get(), 1000000);
-//        changeChemical(Chemicals.O2.get(), 1000000);
-//        changeChemical(Chemicals.NO.get(), 1000000);
+        changeChemical(Chemicals.HYDROGEN_ION.get(), 10000L);
+        changeChemical(Chemicals.HYDROXIDE.get(), 10000L);
         return Component.literal("filled with NO@");
     }
     public double GetChemical(Chemical chemical) {
-        return (double) contents.getOrDefault(chemical, 0) / 1000;
+        return (double) contents.getOrDefault(chemical, 0L) / 1000;
     }
-    public int getVolume() {
+    public long getVolume() {
         return Volume;
     }
-    public float getTemperature() { return temperature; }
+    public float getTemperature() {
+//        return temperature;
+        return 298;
+    }
 }

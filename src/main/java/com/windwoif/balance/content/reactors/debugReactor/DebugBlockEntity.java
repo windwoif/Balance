@@ -2,7 +2,6 @@ package com.windwoif.balance.content.reactors.debugReactor;
 
 import com.windwoif.balance.AllBlockEntityTypes;
 import com.windwoif.balance.Balance;
-import com.windwoif.balance.Chemical;
 import com.windwoif.balance.Reaction;
 import com.windwoif.balance.content.reactors.reactorCore.Reactor;
 import net.minecraft.core.BlockPos;
@@ -13,7 +12,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.registries.IForgeRegistry;
@@ -25,12 +23,12 @@ import java.util.List;
 import static com.windwoif.balance.dimension.DimensionAtmosphere.getAtmosphere;
 
 public class DebugBlockEntity extends BlockEntity {
-    private final com.windwoif.balance.content.reactors.reactorCore.Reactor Reactor;
+    private final com.windwoif.balance.content.reactors.reactorCore.Reactor reactor;
 
     public DebugBlockEntity(BlockPos pos, BlockState state) {
         super(AllBlockEntityTypes.DEBUG_REACTOR_ENTITY.get(), pos, state);
-        Reactor = new Reactor(1000 , level != null ? getAtmosphere(level.dimension()).temperature() : 0, 10000);
-        Reactor.setMarkChangedCallback(this::setChanged);
+        reactor = new Reactor(1000000 , level != null ? getAtmosphere(level.dimension()).temperature() : 0, 10000);
+        reactor.setMarkChangedCallback(this::setChanged);
         IForgeRegistry<Reaction> reactionRegistry = RegistryManager.ACTIVE.getRegistry(Balance.REACTION_REGISTRY_KEY);
         if (reactionRegistry != null) {
             availableReactions.addAll(reactionRegistry.getValues());
@@ -41,24 +39,26 @@ public class DebugBlockEntity extends BlockEntity {
 
     public void tick() {
         if (level != null && !level.isClientSide()) {
-            Reactor.tick(0.05f);
-            if (Reactor.getContentVolume(Chemical.State.GAS) <= 0) {
-                level.explode(
-                        null,
-                        getBlockPos().getX() + 0.5,
-                        getBlockPos().getY() + 0.5,
-                        getBlockPos().getZ() + 0.5,
-                        4.0f,
-                        Level.ExplosionInteraction.BLOCK
-                );
-            }
+            reactor.tick(0.05f);
+
+
+//            if (reactor.getContentVolume(Chemical.State.GAS) <= 0) {
+//                level.explode(
+//                        null,
+//                        getBlockPos().getX() + 0.5,
+//                        getBlockPos().getY() + 0.5,
+//                        getBlockPos().getZ() + 0.5,
+//                        4.0f,
+//                        Level.ExplosionInteraction.BLOCK
+//                );
+//            }
         }
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
-        ListTag chemicalsList = Reactor.SaveChemicals();
+        ListTag chemicalsList = reactor.SaveChemicals();
         tag.put("Chemicals", chemicalsList);
     }
 
@@ -67,24 +67,24 @@ public class DebugBlockEntity extends BlockEntity {
         super.load(tag);
         if (tag.contains("Chemicals", Tag.TAG_LIST)) {
             ListTag chemicalsList = tag.getList("Chemicals", Tag.TAG_COMPOUND);
-            Reactor.LoadChemicals(chemicalsList);
+            reactor.LoadChemicals(chemicalsList);
         }
     }
 
-//    public Component check1() {
-//        return Reactor.displayReactionPlan();
-//    }
+    public Component check1() {
+        return reactor.displayReactionPlan();
+    }
 
     public Component check2() {
-        return Reactor.check();
+        return reactor.check();
     }
 
     public Component fillWithWater() {
-        return Reactor.testFill();
+        return reactor.testFill();
     }
 
     public Component fillTest() {
-        return Reactor.testFill2();
+        return reactor.testFill2();
     }
 
     @Override
