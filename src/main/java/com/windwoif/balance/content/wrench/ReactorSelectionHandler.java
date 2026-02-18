@@ -101,12 +101,15 @@ public class ReactorSelectionHandler {
                         .colored(h ? HIGHLIGHT : PASSIVE)
                         .withFaceTextures(faceTex, faceTex)
                         .disableLineNormals()
-                        .lineWidth(h ? 1 / 16f : 1 / 64f);
+                        .lineWidth(h ? 1 / 16f : 1 / 32f);
             }
         }
 
         HitResult hitResult = mc.hitResult;
-        BlockHitResult blockHit = (BlockHitResult) hitResult;
+        BlockHitResult blockHit = null;
+        if (hitResult != null && hitResult.getType() == Type.BLOCK) {
+            blockHit = (BlockHitResult) hitResult;
+        }
         if (blockHit != null) {
             hovered = blockHit.getBlockPos().relative(blockHit.getDirection());
         }

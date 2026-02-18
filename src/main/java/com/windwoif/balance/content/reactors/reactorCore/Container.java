@@ -13,9 +13,7 @@ import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.RegistryManager;
 import org.slf4j.Logger;
 
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static com.windwoif.balance.Balance.CHEMICAL_REGISTRY_KEY;
 
@@ -40,6 +38,12 @@ public class Container {
         phases.put(Chemical.State.GAS, new Phase(Chemical.State.GAS));
         phases.put(Chemical.State.MOLTEN_SALT, new Phase(Chemical.State.MOLTEN_SALT));
         phases.put(Chemical.State.MOLTEN_METAL, new Phase(Chemical.State.MOLTEN_METAL));
+        sortedPhases.add(phases.get(Chemical.State.SOLID));
+        sortedPhases.add(phases.get(Chemical.State.LIQUID_POLAR));
+        sortedPhases.add(phases.get(Chemical.State.LIQUID_NONPOLAR));
+        sortedPhases.add(phases.get(Chemical.State.GAS));
+        sortedPhases.add(phases.get(Chemical.State.MOLTEN_SALT));
+        sortedPhases.add(phases.get(Chemical.State.MOLTEN_METAL));
     }
     private Runnable markChangedCallback;
     public void setMarkChangedCallback(Runnable callback) {
@@ -50,9 +54,11 @@ public class Container {
     }
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public void tick(){
+    protected void tick(){
         updateTemp();
         updateVolume();
+        updateDensity();
+        updatePhaseOrder();
     }
 
     private void updateTemp() {
@@ -66,8 +72,8 @@ public class Container {
     }
 
     private final Map<Chemical, Long> contents = new HashMap<>();
-
     private final EnumMap<Chemical.State, Phase> phases = new EnumMap<>(Chemical.State.class);
+    private final List<Phase> sortedPhases = new ArrayList<>();
 
     public Phase getPhase(Chemical.State state) {
         return phases.get(state);
@@ -81,9 +87,18 @@ public class Container {
     }
 
     private void updateVolume(){
-        phases.forEach((state, phase) -> phase.updateVolume());
-        double occupiedVolume = phases.values().stream().mapToDouble(Phase::getVolume).sum();
-        phases.get(Chemical.State.GAS).setVolume(Volume - occupiedVolume);
+        double occupied = 0;
+        for (Map.Entry<Chemical.State, Phase> entry : phases.entrySet()) {
+            if (entry.getKey() != Chemical.State.GAS) {
+                entry.getValue().updateVolume();
+                occupied += entry.getValue().getVolume();
+            }
+        }
+        phases.get(Chemical.State.GAS).setVolume(Volume - occupied);
+    }
+
+    private void updateDensity() {
+        phases.forEach((state, phase) -> phase.updateDensity());
     }
 
     private void syncStateMaps() {
@@ -95,6 +110,15 @@ public class Container {
         if (amount >= 0) {
             targetMap.put(chemical, amount);
         }
+    }
+
+    private void updatePhaseOrder() {
+        sortedPhases.sort(Comparator.comparingDouble(Phase::getDensity).reversed());
+    }
+
+
+    public List<Phase> getSortedPhases() {
+        return sortedPhases;
     }
 
     public void changeChemical(Chemical chemical, long amount) {

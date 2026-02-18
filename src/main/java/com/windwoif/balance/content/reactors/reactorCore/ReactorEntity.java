@@ -47,7 +47,7 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
         this(AllEntityTypes.REACTOR_ENTITY.get(), world);
         setBoundingBox(boundingBox);
         resetPositionToBB();
-        reactor = new Reactor(10000,298,10000);
+        reactor = new Reactor(getVolume(),298,10000);
     }
 
     public void resetPositionToBB() {
@@ -79,6 +79,15 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
 
     public void addChemical(Chemical chemical, long amount) {
         if (reactor != null) reactor.changeChemical(chemical, amount);
+    }
+
+    public long getVolume() {
+        AABB boundingBox = getBoundingBox();
+        return (long) (boundingBox.getXsize() * boundingBox.getYsize() * boundingBox.getZsize()) * 1000;
+    }
+
+    public Reactor getReactor() {
+        return reactor;
     }
 
     @Override
@@ -133,7 +142,7 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
     public void readAdditionalSaveData(CompoundTag compound) {
         Vec3 position = position();
         setBoundingBox(readBoundingBox(compound).move(position));
-        reactor = new Reactor(10000,298,10000);
+        reactor = new Reactor(getVolume(),298,10000);
         if (compound.contains("Chemicals", Tag.TAG_LIST)) {
             ListTag chemicalsList = compound.getList("Chemicals", Tag.TAG_COMPOUND);
             reactor.LoadChemicals(chemicalsList);
