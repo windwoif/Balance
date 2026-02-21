@@ -1,12 +1,13 @@
-package com.windwoif.balance;
+package com.windwoif.balance.content.reactors.recipe.reaction;
 
+import com.windwoif.balance.content.reactors.recipe.chemical.Chemicals;
 import net.minecraftforge.registries.RegistryObject;
 
 import java.util.Map;
 
 import static com.windwoif.balance.Balance.REACTIONS;
-import static com.windwoif.balance.Chemicals.*;
-import static com.windwoif.balance.Reaction.State.*;
+import static com.windwoif.balance.content.reactors.recipe.chemical.Chemicals.*;
+import static com.windwoif.balance.content.reactors.recipe.reaction.Reaction.State.*;
 
 public class Reactions {
 

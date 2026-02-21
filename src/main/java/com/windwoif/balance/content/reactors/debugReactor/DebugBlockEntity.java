@@ -2,7 +2,7 @@ package com.windwoif.balance.content.reactors.debugReactor;
 
 import com.windwoif.balance.AllBlockEntityTypes;
 import com.windwoif.balance.Balance;
-import com.windwoif.balance.Reaction;
+import com.windwoif.balance.content.reactors.recipe.reaction.Reaction;
 import com.windwoif.balance.content.reactors.reactorCore.Reactor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;

@@ -1,6 +1,12 @@
 package com.windwoif.balance;
 
 import com.mojang.logging.LogUtils;
+import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
+import com.windwoif.balance.content.reactors.recipe.chemical.Chemicals;
+import com.windwoif.balance.content.reactors.recipe.material.Material;
+import com.windwoif.balance.content.reactors.recipe.material.Materials;
+import com.windwoif.balance.content.reactors.recipe.reaction.Reaction;
+import com.windwoif.balance.content.reactors.recipe.reaction.Reactions;
 import com.windwoif.balance.network.BalanceNetwork;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Registry;
@@ -27,8 +33,6 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.*;
 import org.slf4j.Logger;
-import com.simibubi.create.*;
-
 
 
 // The value here should match an entry in the META-INF/mods.toml file
@@ -39,6 +43,8 @@ public class Balance
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final ResourceKey<Registry<Chemical>> CHEMICAL_REGISTRY_KEY = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(MODID, "chemicals"));
     public static final ResourceKey<Registry<Reaction>> REACTION_REGISTRY_KEY = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(MODID, "reactions"));
+    public static final ResourceKey<Registry<Material>> MATERIAL_REGISTRY_KEY = ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(MODID, "materials"));
+
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, Balance.MODID);
@@ -46,6 +52,7 @@ public class Balance
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MODID);
     public static final DeferredRegister<Chemical> CHEMICALS = DeferredRegister.create(CHEMICAL_REGISTRY_KEY, MODID);
     public static final DeferredRegister<Reaction> REACTIONS = DeferredRegister.create(REACTION_REGISTRY_KEY, MODID);
+    public static final DeferredRegister<Material> MATERIALS = DeferredRegister.create(MATERIAL_REGISTRY_KEY, MODID);
 
 
 
@@ -57,6 +64,7 @@ public class Balance
         AllBlockEntityTypes.init();
         Chemicals.init();
         Reactions.init();
+        Materials.init();
     }
     public Balance(FMLJavaModLoadingContext context)
     {
@@ -70,10 +78,12 @@ public class Balance
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         ENTITY_TYPES.register(modEventBus);
-        CHEMICALS.register(modEventBus);
-        REACTIONS.register(modEventBus);
         BLOCK_ENTITIES.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
+
+        CHEMICALS.register(modEventBus);
+        REACTIONS.register(modEventBus);
+        MATERIALS.register(modEventBus);
         MinecraftForge.EVENT_BUS.register(this);
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);

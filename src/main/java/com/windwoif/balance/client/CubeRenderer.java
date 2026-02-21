@@ -94,7 +94,7 @@ public class CubeRenderer {
                                         float minX, float minY, float minZ,
                                         float maxX, float maxY, float maxZ,
                                         int color, int light) {
-        float skew = 1/1024f;
+        float skew = 1/16384f;
 
         renderFace(poseStack, consumer, sprite, new Vector3f(0, -1, 0), 'y', minY - skew, 'x', 'z', minX, maxX, minZ, maxZ, color, light);
         renderFace(poseStack, consumer, sprite, new Vector3f(0, 1, 0), 'y', maxY + skew, 'x', 'z', minX, maxX, minZ, maxZ, color, light);

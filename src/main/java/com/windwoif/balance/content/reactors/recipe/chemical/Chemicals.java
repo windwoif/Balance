@@ -1,9 +1,9 @@
-package com.windwoif.balance;
+package com.windwoif.balance.content.reactors.recipe.chemical;
 
 import net.minecraftforge.registries.RegistryObject;
 
 import static com.windwoif.balance.Balance.CHEMICALS;
-import static com.windwoif.balance.Chemical.State.*;
+import static com.windwoif.balance.content.reactors.recipe.chemical.Chemical.State.*;
 
 public class Chemicals {
     public static void init() {}
@@ -42,6 +42,15 @@ public class Chemicals {
 
     public static final RegistryObject<Chemical> ETHANOL = CHEMICALS.register("ethanol",
             () -> new Chemical("C₂H₅OH", ORGANIC, -277600, 160.7f, 0.058f, 112.0f, 46.0f, lucent));
+
+    public static final RegistryObject<Chemical> IRON = CHEMICALS.register("iron",
+            () -> new Chemical("Fe", Chemical.State.MOLTEN_METAL, 0, 0, 0.1f, 25f, 55.85f, 0xFFFFAD00)); // 炽热橙色
+
+    public static final RegistryObject<Chemical> GOLD = CHEMICALS.register("gold",
+            () -> new Chemical("Au", Chemical.State.MOLTEN_METAL, 0, 0, 0.1f, 25f, 197.0f, 0xFFFFD700)); // 亮金色
+
+    public static final RegistryObject<Chemical> COPPER = CHEMICALS.register("copper",
+            () -> new Chemical("Cu", Chemical.State.MOLTEN_METAL, 0, 0, 0.1f, 25f, 63.55f, 0xFFFF5C00)); // 熔融铜橙红
 
     // ---------- 固体 ----------
     public static final RegistryObject<Chemical> SODIUM_CHLORIDE = CHEMICALS.register("sodium_chloride",

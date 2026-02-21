@@ -1,8 +1,8 @@
 package com.windwoif.balance.content.reactors.reactorCore;
 
 import com.windwoif.balance.Balance;
-import com.windwoif.balance.Chemical;
-import com.windwoif.balance.Reaction;
+import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
+import com.windwoif.balance.content.reactors.recipe.reaction.Reaction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -32,7 +32,6 @@ public class Reactor extends Container {
         Map<Chemical, Long> finalChange = getFinalChange(getTotalReactPlan(timeStep));
         finalChange.forEach(this::changeChemical);
         updateHeat(finalChange);
-        markChanged();
     }
 
     private void updateHeat(Map<Chemical, Long> finalChange) {

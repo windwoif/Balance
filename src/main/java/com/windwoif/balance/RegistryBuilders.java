@@ -1,6 +1,9 @@
 package com.windwoif.balance;
 
 
+import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
+import com.windwoif.balance.content.reactors.recipe.material.Material;
+import com.windwoif.balance.content.reactors.recipe.reaction.Reaction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -22,6 +25,11 @@ public class RegistryBuilders {
             event.create(new RegistryBuilder<Reaction>()
                     .setName(Balance.REACTION_REGISTRY_KEY.location())
                     .setDefaultKey(ResourceLocation.fromNamespaceAndPath(MODID, "none_reaction"))
+                    .hasTags()
+            );
+            event.create(new RegistryBuilder<Material>()
+                    .setName(Balance.MATERIAL_REGISTRY_KEY.location())
+                    .setDefaultKey(ResourceLocation.fromNamespaceAndPath(MODID, "none_material"))
                     .hasTags()
             );
         }

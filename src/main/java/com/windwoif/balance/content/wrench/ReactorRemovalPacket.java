@@ -10,7 +10,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.network.NetworkEvent.Context;
 
-public class ReactorRemovalPacket extends SimplePacketBase { // 重命名为ReactorRemovalPacket
+public class ReactorRemovalPacket extends SimplePacketBase {
 
     private int entityId;
     private BlockPos soundSource;

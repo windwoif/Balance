@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.windwoif.balance.Balance;
-import com.windwoif.balance.Chemical;
+import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;

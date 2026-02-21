@@ -2,8 +2,8 @@ package com.windwoif.balance.content.reactors.reactorCore;
 
 import com.mojang.logging.LogUtils;
 import com.windwoif.balance.Balance;
-import com.windwoif.balance.Chemical;
-import com.windwoif.balance.Chemicals;
+import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
+import com.windwoif.balance.content.reactors.recipe.chemical.Chemicals;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;

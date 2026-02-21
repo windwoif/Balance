@@ -43,11 +43,8 @@ public class BalanceNetwork {
                 ReactorRemovalPacket.class,
                 ReactorRemovalPacket::write,
                 ReactorRemovalPacket::new,
-                (packet, contextSupplier) -> {
-                    packet.handle(contextSupplier.get());
-                },
+                (packet, contextSupplier) -> packet.handle(contextSupplier.get()),
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
-
     }
 }
