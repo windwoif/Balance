@@ -2,6 +2,7 @@ package com.windwoif.balance.content.reactors.reactorCore;
 
 import com.windwoif.balance.Balance;
 import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
+import com.windwoif.balance.content.reactors.recipe.chemical.Chemicals;
 import com.windwoif.balance.content.reactors.recipe.reaction.Reaction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -35,8 +36,8 @@ public class Reactor extends Container {
     }
 
     private void updateHeat(Map<Chemical, Long> finalChange) {
-        heat += finalChange.entrySet().stream()
-                .mapToLong(entry -> entry.getKey().enthalpy() * entry.getValue())
+        heat -= finalChange.entrySet().stream()
+                .mapToLong(entry -> entry.getKey().enthalpy() * entry.getValue() / 1000)
                 .sum();
     }
 
@@ -56,7 +57,7 @@ public class Reactor extends Container {
                                 case SOLID ->  getContentVolume(Chemical.State.SOLID);
                             };
                             return totalRate;
-                        }
+                        }//TODO
                 ));
     }
 
@@ -69,14 +70,14 @@ public class Reactor extends Container {
     private Map<Chemical, Double> getTotalChange(@NotNull Map<Reaction, Double> reactPlan){
         return reactPlan.entrySet().stream()
                 .flatMap(reactionEntry -> reactionEntry.getKey().getTotalReaction().entrySet().stream()
-                        .map(entry -> Map.entry(entry.getKey(), entry.getValue() * reactionEntry.getValue())))//TODO: restructure
+                        .map(entry -> Map.entry(entry.getKey(), entry.getValue() * reactionEntry.getValue())))
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
                         Collectors.summingDouble(Map.Entry::getValue)));
     }
     private Map<Chemical, Long> getFinalChange(@NotNull Map<Reaction, Long> reactPlan){
         return reactPlan.entrySet().stream()
                 .flatMap(reactionEntry -> reactionEntry.getKey().getTotalReaction().entrySet().stream()
-                        .map(entry -> Map.entry(entry.getKey(), entry.getValue() * reactionEntry.getValue())))//TODO: restructure
+                        .map(entry -> Map.entry(entry.getKey(), entry.getValue() * reactionEntry.getValue())))
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
                         Collectors.summingLong(Map.Entry::getValue)));
     }
@@ -84,10 +85,9 @@ public class Reactor extends Container {
     @Nullable
     private Map.Entry<Chemical, Double> getLackingChemical(@NotNull Map<Reaction, Double> reactPlan) {
         return getTotalChange(reactPlan).entrySet().stream()
-
                 .filter(entry -> entry.getValue() < 0)
                 .map(entry -> Map.entry(entry.getKey(),
-                        - GetChemical(entry.getKey()) / entry.getValue()))
+                        - getChemicalAmount(entry.getKey()) / entry.getValue()))
                 .filter(entry -> entry.getValue() < 1)
                 .min(Map.Entry.comparingByValue()).orElse(null);
     }
@@ -98,7 +98,7 @@ public class Reactor extends Container {
                 .filter(entry -> !(entry.getValue() > 0 ?
                         entry.getKey().getReactants().containsKey(lackingChemical.getKey()) :
                         entry.getKey().getProducts().containsKey(lackingChemical.getKey())))
-                .map(entry -> Map.entry(entry.getKey(), entry.getValue() * (1 - lackingChemical.getValue())))//TODO: restructure
+                .map(entry -> Map.entry(entry.getKey(), entry.getValue() * (1 - lackingChemical.getValue())))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
@@ -107,7 +107,7 @@ public class Reactor extends Container {
                         .map(chemicalEntry -> Map.entry(chemicalEntry.getKey(),
                                 chemicalEntry.getValue() * ratio)
                         )
-                )//TODO: restructure
+                )
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,

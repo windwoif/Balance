@@ -1,4 +1,4 @@
-package com.windwoif.balance.content.reactors.reactorCore;
+package com.windwoif.balance.content.reactors.reactorEntity;
 
 import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
 import net.minecraft.nbt.CompoundTag;

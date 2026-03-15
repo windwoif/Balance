@@ -46,11 +46,11 @@ public class Reactions {
                     ),
                     Map.of(
                             CARBON_DIOXIDE.get(), 1,
-                            WATER.get(), 2
+                            WATER_GAS.get(), 2      // 改为气态水
                     ),
-                    50000.0,      // 50 kJ/mol
-                    1.0e8,        // 较快的气相反应
-                    GAS
+                    50000.0,      // 50 kJ/mol（活化能）
+                    1.0e8,        // 指前因子
+                    GAS           // 反应状态为气相
             ));
 
     // ---------- 乙醇燃烧 ----------
@@ -62,7 +62,7 @@ public class Reactions {
                     ),
                     Map.of(
                             CARBON_DIOXIDE.get(), 2,
-                            WATER.get(), 3
+                            WATER_GAS.get(), 3
                     ),
                     55000.0,
                     1.0e8,

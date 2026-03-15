@@ -1,10 +1,10 @@
-package com.windwoif.balance.content.reactors.reactorCore;
+package com.windwoif.balance.content.reactors.reactorEntity;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
 import com.windwoif.balance.client.CubeRenderer;
 import com.windwoif.balance.client.ModRenderTypes;
+import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -26,15 +26,17 @@ public class ReactorRenderer extends EntityRenderer<ReactorEntity> {
 	private final TextureAtlasSprite whiteConcreteSprite;
 	private final TextureAtlasSprite lavaBWSprite;
 	private final TextureAtlasSprite lightWaterSprite;
+	private final TextureAtlasSprite flameSprite;
 
 	public ReactorRenderer(EntityRendererProvider.Context context) {
 		super(context);
 		var atlas = Minecraft.getInstance().getModelManager().getAtlas(InventoryMenu.BLOCK_ATLAS);
 		this.waterSprite = atlas.getSprite(ResourceLocation.parse("balance:block/water_still_opaque"));
-		this.gravelSprite = atlas.getSprite(ResourceLocation.parse("balance:block/gravel_white"));
+		this.gravelSprite = atlas.getSprite(ResourceLocation.parse("balance:block/white_concrete_powder.png"));
 		this.whiteConcreteSprite = atlas.getSprite(ResourceLocation.parse("balance:block/white_concrete"));
 		this.lavaBWSprite = atlas.getSprite(ResourceLocation.parse("balance:block/lava_still_bw"));
 		this.lightWaterSprite = atlas.getSprite(ResourceLocation.parse("balance:block/water_still_light"));
+		this.flameSprite = atlas.getSprite(ResourceLocation.parse("balance:block/flame"));
 	}
 
 	@Override
@@ -79,10 +81,18 @@ public class ReactorRenderer extends EntityRenderer<ReactorEntity> {
 				default -> packedLight;
 			};
 
+			int color = phase.color();
+			if (entity.isBurning() && phase.state() == Chemical.State.GAS) {
+				light = 0xF000F0;
+				color = 0xFFFFFFFF;
+				sprite = flameSprite;
+			}
+			if (color >> 24 == 0) continue;
+
 			CubeRenderer.renderLiquidCube(poseStack, consumer, sprite,
 					-w/2, yMin, -d/2,
 					w/2, yMax,  d/2,
-					phase.color(), light);
+					color, light);
 
 			accumulatedVolume += phaseVolume;
 		}

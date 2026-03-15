@@ -1,7 +1,7 @@
 package com.windwoif.balance.content.wrench;
 
 import com.simibubi.create.foundation.networking.SimplePacketBase;
-import com.windwoif.balance.content.reactors.reactorCore.ReactorEntity;
+import com.windwoif.balance.content.reactors.reactorEntity.ReactorEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;

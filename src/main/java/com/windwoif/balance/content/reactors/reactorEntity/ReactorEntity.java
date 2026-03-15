@@ -1,4 +1,4 @@
-package com.windwoif.balance.content.reactors.reactorCore;
+package com.windwoif.balance.content.reactors.reactorEntity;
 
 import com.simibubi.create.AllSoundEvents;
 import com.simibubi.create.api.schematic.requirement.SpecialEntityItemRequirement;
@@ -7,6 +7,8 @@ import com.simibubi.create.content.schematics.requirement.ItemRequirement.ItemUs
 import com.windwoif.balance.AllEntityTypes;
 import com.windwoif.balance.AllItems;
 import com.windwoif.balance.Balance;
+import com.windwoif.balance.content.reactors.reactorCore.Phase;
+import com.windwoif.balance.content.reactors.reactorCore.Reactor;
 import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
 import com.windwoif.balance.content.reactors.recipe.material.Material;
 import net.createmod.catnip.math.VecHelper;
@@ -48,6 +50,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.windwoif.balance.dimension.DimensionAtmosphere.getAtmosphere;
+import static net.minecraft.world.item.Items.FLINT_AND_STEEL;
+
 public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData, SpecialEntityItemRequirement {
     private static final EntityDataAccessor<CompoundTag> DATA_PHASES =
             SynchedEntityData.defineId(ReactorEntity.class, EntityDataSerializers.COMPOUND_TAG);
@@ -55,15 +60,18 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
     private Reactor reactor;
     private List<PhaseData> clientPhases = Collections.emptyList();
 
+    final int environmentTemperature;
+
     public ReactorEntity(EntityType<?> type, Level world) {
         super(type, world);
+        environmentTemperature = getAtmosphere(world.dimension()).temperature();
     }
 
     public ReactorEntity(Level world, AABB boundingBox) {
         this(AllEntityTypes.REACTOR_ENTITY.get(), world);
         setBoundingBox(boundingBox);
         resetPositionToBB();
-        this.reactor = new Reactor(getVolume(), 298, 10000);
+        this.reactor = new Reactor(getVolume(), environmentTemperature, 10000);
         this.reactor.setMarkChangedCallback(() -> {
             if (!level().isClientSide) {
                 markPhasesDirty();
@@ -101,10 +109,16 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
         if (!level().isClientSide && reactor != null) {
             reactor.tick(0.05f);
         }
+
+        if (!level().isClientSide) {
+            boolean burning = reactor != null && reactor.getTemperature() > 800;
+            this.entityData.set(BURNING, burning);
+        }
+
     }
 
     public void addChemical(Chemical chemical, long amount) {
-        if (reactor != null) reactor.changeChemical(chemical, amount);
+        if (reactor != null) reactor.changeChemical(chemical, amount, environmentTemperature);
     }
 
     public long getVolume() {
@@ -119,7 +133,7 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
     public List<PhaseData> getPhaseData() {
         if (level().isClientSide) {
             CompoundTag wrapper = this.entityData.get(DATA_PHASES);
-            if (wrapper != null && wrapper.contains("Phases")) {
+            if (wrapper.contains("Phases")) {
                 ListTag list = wrapper.getList("Phases", Tag.TAG_COMPOUND);
                 List<PhaseData> phases = new ArrayList<>(list.size());
                 for (Tag tag : list) {
@@ -132,6 +146,12 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
         return Collections.emptyList();
     }
 
+    public boolean isBurning() {
+        return this.entityData.get(BURNING);
+    }
+    private static final EntityDataAccessor<Boolean> BURNING = SynchedEntityData.defineId(
+            ReactorEntity.class, EntityDataSerializers.BOOLEAN);//TODO: Burning
+
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
         if (level().isClientSide) {
@@ -143,6 +163,11 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
             return InteractionResult.PASS;
         }
 
+        if (stack.is(FLINT_AND_STEEL)) {
+            reactor.light();
+            return InteractionResult.SUCCESS;
+        }
+
         IForgeRegistry<Material> materialRegistry = RegistryManager.ACTIVE.getRegistry(Balance.MATERIAL_REGISTRY_KEY);
         if (materialRegistry == null) {
             return InteractionResult.FAIL;
@@ -152,7 +177,7 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
             Optional<Map<Chemical, Long>> composition = Material.resolveTagToChemicals(tag);
             if (composition.isPresent()) {
                 composition.get().forEach((chem, amount) -> {
-                    if (reactor != null) reactor.changeChemical(chem, amount);
+                    if (reactor != null) reactor.changeChemical(chem, amount, environmentTemperature);
                 });
                 stack.shrink(1);
                 player.displayClientMessage(Component.literal("Item decomposed"), true);
@@ -167,6 +192,7 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
     @Override
     protected void defineSynchedData() {
         this.entityData.define(DATA_PHASES, new CompoundTag());
+        this.entityData.define(BURNING, false);//TODO: Burning
     }
 
     private void markPhasesDirty() {
@@ -174,6 +200,7 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
 
         ListTag phasesList = new ListTag();
         for (Phase phase : reactor.getSortedPhases()) {
+            phase.updateVolume();
             if (phase.getVolume() <= 0.001) continue;
             PhaseData data = new PhaseData(
                     phase.getState(),

@@ -10,12 +10,6 @@ public class ModRenderTypes extends RenderType {
         super(name, format, mode, bufferSize, affectsCrumbling, sortOnUpload, setupState, clearState);
     }
 
-    /**
-     * 基于原版 translucent 但禁用面剔除的渲染类型。
-     * 顶点格式：DefaultVertexFormat.BLOCK（包含法线）
-     * 着色器：RENDERTYPE_TRANSLUCENT_SHADER
-     * 纹理：方块图集，半透明混合，光照贴图，无剔除
-     */
     public static final RenderType TRANSLUCENT_NO_CULL = create(
             "balance:translucent_no_cull",
             DefaultVertexFormat.BLOCK,
@@ -28,7 +22,7 @@ public class ModRenderTypes extends RenderType {
                     .setTextureState(RenderStateShard.BLOCK_SHEET_MIPPED)
                     .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
                     .setLightmapState(RenderStateShard.LIGHTMAP)
-                    .setCullState(RenderStateShard.NO_CULL)  // 禁用剔除
+                    .setCullState(RenderStateShard.NO_CULL)
                     .createCompositeState(false)
     );
 }

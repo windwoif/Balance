@@ -4,7 +4,7 @@ import com.google.common.base.Objects;
 import com.simibubi.create.AllSpecialTextures;
 import com.simibubi.create.foundation.utility.CreateLang;
 import com.simibubi.create.foundation.utility.RaycastHelper;
-import com.windwoif.balance.content.reactors.reactorCore.ReactorEntity;
+import com.windwoif.balance.content.reactors.reactorEntity.ReactorEntity;
 import com.windwoif.balance.network.BalanceNetwork;
 import net.createmod.catnip.outliner.Outliner;
 import net.minecraft.client.Minecraft;

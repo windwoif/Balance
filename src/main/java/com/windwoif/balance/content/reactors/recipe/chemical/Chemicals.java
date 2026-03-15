@@ -31,6 +31,9 @@ public class Chemicals {
     public static final RegistryObject<Chemical> WATER = CHEMICALS.register("water",
             () -> new Chemical("H₂O", LIQUID_POLAR, -285800, 70.0f, 0.018f, 75.3f, 18.0f, 0x40FFFFFF));
 
+    public static final RegistryObject<Chemical> WATER_GAS = CHEMICALS.register("water_gas",
+            () -> new Chemical("H₂O(g)", GAS, -241800, 188.8f, 22.4f, 33.6f, 18.0f, lucent));
+
     public static final RegistryObject<Chemical> METHANE = CHEMICALS.register("methane",
             () -> new Chemical("CH₄", GAS, -74600, 186.3f, 22.4f, 35.7f, 16.0f, lucent));
 
@@ -41,7 +44,7 @@ public class Chemicals {
             () -> new Chemical("CO₂", GAS, -393500, 213.8f, 22.4f, 37.1f, 44.0f, lucent));
 
     public static final RegistryObject<Chemical> ETHANOL = CHEMICALS.register("ethanol",
-            () -> new Chemical("C₂H₅OH", ORGANIC, -277600, 160.7f, 0.058f, 112.0f, 46.0f, lucent));
+            () -> new Chemical("C₂H₅OH", ORGANIC, -277600, 160.7f, 0.058f, 112.0f, 46.0f, 0x40FFFFFF));
 
     public static final RegistryObject<Chemical> IRON = CHEMICALS.register("iron",
             () -> new Chemical("Fe", Chemical.State.MOLTEN_METAL, 0, 0, 0.1f, 25f, 55.85f, 0xFFFFAD00)); // 炽热橙色

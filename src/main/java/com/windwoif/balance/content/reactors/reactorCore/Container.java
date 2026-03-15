@@ -18,7 +18,7 @@ import java.util.*;
 import static com.windwoif.balance.Balance.CHEMICAL_REGISTRY_KEY;
 
 public class Container {
-    private float temperature;//TODO
+    private float temperature;
     protected float heat;
     private final long Volume;
     private final long BasicHeatCapacity;
@@ -121,15 +121,21 @@ public class Container {
         return sortedPhases;
     }
 
-    public void changeChemical(Chemical chemical, long amount) {
+    protected void changeChemical(Chemical chemical, long amount) {
+        if (amount == 0) return;
         contents.merge(chemical, amount, Long::sum);
         if (contents.getOrDefault(chemical, 0L) < 0) LOGGER.error("Overcost chemicals");
         updateStateMaps(chemical, contents.get(chemical));
         markChanged();
     }
 
+    public void changeChemical(Chemical chemical, long amount, float temperature) {
+        changeChemical(chemical, amount);
+        heat += chemical.getHeatCapacity(amount) * temperature;
+    }
+
     public double getConcentration(Chemical chemical) {
-        double amount = GetChemical(chemical);
+        double amount = getChemicalAmount(chemical);
         return switch (chemical.state()) {
             case ORGANIC, AQUEOUS, GAS -> amount / getContentVolume(chemical.state());
             default -> 1;
@@ -183,14 +189,16 @@ public class Container {
         changeChemical(Chemicals.HYDROXIDE.get(), 10000L);
         return Component.literal("filled with NO@");
     }
-    public double GetChemical(Chemical chemical) {
+    public double getChemicalAmount(Chemical chemical) {
         return (double) contents.getOrDefault(chemical, 0L) / 1000;
     }
     public long getVolume() {
         return Volume;
     }
     public float getTemperature() {
-//        return temperature;
-        return 298;
+        return temperature;
     }
+    public void light() {
+        temperature += 600;
+    }//TODO
 }

@@ -1,6 +1,6 @@
 package com.windwoif.balance;
 
-import com.windwoif.balance.content.reactors.reactorCore.ReactorEntity;
+import com.windwoif.balance.content.reactors.reactorEntity.ReactorEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraftforge.registries.RegistryObject;

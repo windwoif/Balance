@@ -16,7 +16,7 @@ public class BalanceNetwork {
 
     // 创建网络通道
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(Balance.MODID, "main"),
+            ResourceLocation.parse("balance:main"),
             () -> PROTOCOL_VERSION,
             PROTOCOL_VERSION::equals,
             PROTOCOL_VERSION::equals
