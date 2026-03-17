@@ -71,22 +71,6 @@ public class DebugBlockEntity extends BlockEntity {
         }
     }
 
-    public Component check1() {
-        return reactor.displayReactionPlan();
-    }
-
-    public Component check2() {
-        return reactor.check();
-    }
-
-    public Component fillWithWater() {
-        return reactor.testFill();
-    }
-
-    public Component fillTest() {
-        return reactor.testFill2();
-    }
-
     @Override
     public CompoundTag getUpdateTag() {
         CompoundTag tag = super.getUpdateTag();

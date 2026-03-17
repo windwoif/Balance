@@ -143,14 +143,6 @@ public class Container {
         };
     }
 
-    public Component check() {
-        if (contents.isEmpty()) return Component.literal("Empty");
-        MutableComponent message = Component.literal("Content:\n");
-        contents.forEach((chemical, amount) ->
-                message.append(Component.literal(String.format("- %s: %d mol\n", chemical.name(), amount/1000))));
-        return message;
-    }
-
     public void LoadChemicals(ListTag chemicalsList) {
         contents.clear();
         syncStateMaps();
@@ -195,16 +187,6 @@ public class Container {
         }
     }
 
-    public Component testFill() {//milk
-
-        changeChemical(Chemicals.WATER.get(), 1000000000000000000L);
-        return Component.literal("filled with NO");
-    }
-    public Component testFill2() {
-        changeChemical(Chemicals.HYDROGEN_ION.get(), 10000L);
-        changeChemical(Chemicals.HYDROXIDE.get(), 10000L);
-        return Component.literal("filled with NO@");
-    }
     public double getChemicalAmount(Chemical chemical) {
         return (double) contents.getOrDefault(chemical, 0L) / 1000;
     }

@@ -45,36 +45,4 @@ public class DebugBlock extends Block implements EntityBlock {
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new DebugBlockEntity(pos, state);
     }
-
-    @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        if (!level.isClientSide()) {
-            ItemStack itemInHand = player.getItemInHand(hand);
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof DebugBlockEntity tank) {
-                if (itemInHand.is(Items.DIAMOND)) {
-                    Component message = tank.check2();
-                    player.displayClientMessage(message, false);
-                    return InteractionResult.SUCCESS;
-                }
-                else if (itemInHand.is(Items.STICK)) {
-                    Component message = tank.check1();
-                    player.displayClientMessage(message, false);
-                    return InteractionResult.SUCCESS;
-                }
-                else if (itemInHand.is(Items.WATER_BUCKET)) {
-                    Component message = tank.fillTest();
-                    player.displayClientMessage(message, false);
-                    return InteractionResult.SUCCESS;
-                }
-                else if (itemInHand.is(Items.MILK_BUCKET)) {
-                    Component message = tank.fillWithWater();
-                    player.displayClientMessage(message, false);
-                    return InteractionResult.SUCCESS;
-                }
-            }
-        }
-
-        return InteractionResult.sidedSuccess(level.isClientSide());
-    }
 }

@@ -139,32 +139,4 @@ public class Reactor extends Container {
 
 
     public List<Reaction> getUsableReactions() { return usableReactions; }
-
-
-    public Component displayReactionPlan() {
-        Map<Reaction, Long> reactionPlan = getTotalReactPlan(0.05f);
-        if (reactionPlan.isEmpty()) {
-            return Component.literal("No reaction plans");
-        }
-
-        MutableComponent message = Component.literal("Reaction Plans:\n");
-
-        IForgeRegistry<Reaction> reactionRegistry = RegistryManager.ACTIVE.getRegistry(Balance.REACTION_REGISTRY_KEY);
-
-        for (Map.Entry<Reaction, Long> entry : reactionPlan.entrySet()) {
-            Reaction reaction = entry.getKey();
-            Long amount = entry.getValue();
-
-
-            ResourceLocation reactionId = reactionRegistry.getKey(reaction);
-            String reactionName = reactionId != null ? reactionId.toString() : "Unknown Reaction";
-
-            message.append(Component.literal(
-                    String.format("- %s: %d mol\n", reactionName, amount)
-            ));
-        }
-
-        return message;
-    }
-
 }
