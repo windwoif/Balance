@@ -219,7 +219,7 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
         Vec3 pos = position();
         writeBoundingBox(compound, getBoundingBox().move(pos.scale(-1)));
         if (reactor != null) {
-            compound.put("Chemicals", reactor.SaveChemicals());
+            compound.put("ReactorData", reactor.serializeNBT());
         }
     }
 
@@ -227,11 +227,10 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
     public void readAdditionalSaveData(CompoundTag compound) {
         Vec3 pos = position();
         setBoundingBox(readBoundingBox(compound).move(pos));
-        this.reactor = new Reactor(getVolume(), 298, 10000);
-        if (compound.contains("Chemicals", Tag.TAG_LIST)) {
-            reactor.LoadChemicals(compound.getList("Chemicals", Tag.TAG_COMPOUND));
-        }
-        reactor.setMarkChangedCallback(() -> {
+        this.reactor = new Reactor(getVolume(), environmentTemperature, 10000);
+        if (compound.contains("ReactorData", Tag.TAG_COMPOUND)) {
+            reactor.deserializeNBT(compound.getCompound("ReactorData"));
+        }        reactor.setMarkChangedCallback(() -> {
             if (!level().isClientSide) {
                 markPhasesDirty();
             }

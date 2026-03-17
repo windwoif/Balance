@@ -6,6 +6,7 @@ import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
 import com.windwoif.balance.content.reactors.recipe.chemical.Chemicals;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -179,6 +180,21 @@ public class Container {
         });
         return chemicalsList;
     }
+    public CompoundTag serializeNBT() {
+        CompoundTag tag = new CompoundTag();
+        tag.put("Chemicals", SaveChemicals());
+        tag.putFloat("Heat", heat);
+        return tag;
+    }
+    public void deserializeNBT(CompoundTag tag) {
+        if (tag.contains("Chemicals", Tag.TAG_LIST)) {
+            LoadChemicals(tag.getList("Chemicals", Tag.TAG_COMPOUND));
+        }
+        if (tag.contains("Heat", Tag.TAG_FLOAT)) {
+            heat = tag.getFloat("Heat");
+        }
+    }
+
     public Component testFill() {//milk
 
         changeChemical(Chemicals.WATER.get(), 1000000000000000000L);
