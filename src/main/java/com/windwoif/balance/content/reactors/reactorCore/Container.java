@@ -89,10 +89,10 @@ public class Container {
 
     private void updateVolume(){
         double occupied = 0;
-        for (Map.Entry<Chemical.State, Phase> entry : phases.entrySet()) {
-            if (entry.getKey() != Chemical.State.GAS) {
-                entry.getValue().updateVolume();
-                occupied += entry.getValue().getVolume();
+        for (Phase phase : sortedPhases) {
+            if (phase.getState() != Chemical.State.GAS) {
+                phase.updateVolume();
+                occupied += phase.getVolume();
             }
         }
         phases.get(Chemical.State.GAS).setVolume(Volume - occupied);
@@ -108,9 +108,8 @@ public class Container {
     }
     public void updateStateMaps(Chemical chemical, long amount) {
         Map<Chemical, Long> targetMap = getChemicalMap(chemical.state());
-        if (amount >= 0) {
-            targetMap.put(chemical, amount);
-        }
+        if (amount > 0) targetMap.put(chemical, amount);
+        if (amount == 0) targetMap.remove(chemical);
     }
 
     private void updatePhaseOrder() {
@@ -127,6 +126,7 @@ public class Container {
         contents.merge(chemical, amount, Long::sum);
         if (contents.getOrDefault(chemical, 0L) < 0) LOGGER.error("Overcost chemicals");
         updateStateMaps(chemical, contents.get(chemical));
+        if (contents.getOrDefault(chemical, 0L) == 0) contents.remove(chemical);
         markChanged();
     }
 

@@ -28,7 +28,12 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -56,15 +61,19 @@ import static net.minecraft.world.item.Items.FLINT_AND_STEEL;
 public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData, SpecialEntityItemRequirement {
     private static final EntityDataAccessor<CompoundTag> DATA_PHASES =
             SynchedEntityData.defineId(ReactorEntity.class, EntityDataSerializers.COMPOUND_TAG);
+    private static final EntityDataAccessor<Boolean> BURNING = SynchedEntityData.defineId(
+            ReactorEntity.class, EntityDataSerializers.BOOLEAN);
 
     private Reactor reactor;
     private List<PhaseData> clientPhases = Collections.emptyList();
-
     final int environmentTemperature;
 
     public ReactorEntity(EntityType<?> type, Level world) {
         super(type, world);
         environmentTemperature = getAtmosphere(world.dimension()).temperature();
+        if (!level().isClientSide) {
+            updateClientPhases();
+        }
     }
 
     public ReactorEntity(Level world, AABB boundingBox) {
@@ -72,13 +81,8 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
         setBoundingBox(boundingBox);
         resetPositionToBB();
         this.reactor = new Reactor(getVolume(), environmentTemperature, 10000);
-        this.reactor.setMarkChangedCallback(() -> {
-            if (!level().isClientSide) {
-                markPhasesDirty();
-            }
-        });
         if (!level().isClientSide) {
-            markPhasesDirty();
+            updateClientPhases();
         }
     }
 
@@ -113,8 +117,8 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
         if (!level().isClientSide) {
             boolean burning = reactor != null && reactor.getTemperature() > 800;
             this.entityData.set(BURNING, burning);
+            updateClientPhases();
         }
-
     }
 
     public void addChemical(Chemical chemical, long amount) {
@@ -149,8 +153,6 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
     public boolean isBurning() {
         return this.entityData.get(BURNING);
     }
-    private static final EntityDataAccessor<Boolean> BURNING = SynchedEntityData.defineId(
-            ReactorEntity.class, EntityDataSerializers.BOOLEAN);//TODO: Burning
 
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
@@ -192,10 +194,10 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
     @Override
     protected void defineSynchedData() {
         this.entityData.define(DATA_PHASES, new CompoundTag());
-        this.entityData.define(BURNING, false);//TODO: Burning
+        this.entityData.define(BURNING, false);
     }
 
-    private void markPhasesDirty() {
+    private void updateClientPhases() {
         if (level().isClientSide || reactor == null) return;
 
         ListTag phasesList = new ListTag();
@@ -230,13 +232,9 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
         this.reactor = new Reactor(getVolume(), environmentTemperature, 10000);
         if (compound.contains("ReactorData", Tag.TAG_COMPOUND)) {
             reactor.deserializeNBT(compound.getCompound("ReactorData"));
-        }        reactor.setMarkChangedCallback(() -> {
-            if (!level().isClientSide) {
-                markPhasesDirty();
-            }
-        });
+        }
         if (!level().isClientSide) {
-            markPhasesDirty();
+            updateClientPhases();
         }
     }
 

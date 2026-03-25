@@ -84,12 +84,12 @@ public class ReactorRenderer extends EntityRenderer<ReactorEntity> {
 			int color = phase.color();
 			if (entity.isBurning() && phase.state() == Chemical.State.GAS) {
 				light = 0xF000F0;
-				color = 0xFFFFFFFF;
+				color = 0xBBFFFFFF;
 				sprite = flameSprite;
 			}
 			if (color >> 24 == 0) continue;
 
-			CubeRenderer.renderLiquidCube(poseStack, consumer, sprite,
+			CubeRenderer.renderCube(poseStack, consumer, sprite,
 					-w/2, yMin, -d/2,
 					w/2, yMax,  d/2,
 					color, light);

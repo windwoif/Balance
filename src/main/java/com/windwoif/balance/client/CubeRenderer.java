@@ -2,11 +2,14 @@ package com.windwoif.balance.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.InventoryMenu;
 import org.joml.Vector3f;
 
 public class CubeRenderer {
-
+    final static float SKEW = 1/1024f;
     /**
      * Renders a single axis-aligned face (quad) defined by its two axes ranges and the fixed axis value.
      * The face is subdivided into 1x1 unit cells to achieve proper texture tiling.
@@ -89,20 +92,30 @@ public class CubeRenderer {
         }
     }
 
-    public static void renderLiquidCube(PoseStack poseStack, VertexConsumer consumer,
-                                        TextureAtlasSprite sprite,
-                                        float minX, float minY, float minZ,
-                                        float maxX, float maxY, float maxZ,
-                                        int color, int light) {
-        float skew = 1/16384f;
+    public static void renderCube(PoseStack poseStack, VertexConsumer consumer,
+                                  TextureAtlasSprite sprite,
+                                  float minX, float minY, float minZ,
+                                  float maxX, float maxY, float maxZ,
+                                  int color, int light) {
 
-        renderFace(poseStack, consumer, sprite, new Vector3f(0, -1, 0), 'y', minY - skew, 'x', 'z', minX, maxX, minZ, maxZ, color, light);
-        renderFace(poseStack, consumer, sprite, new Vector3f(0, 1, 0), 'y', maxY + skew, 'x', 'z', minX, maxX, minZ, maxZ, color, light);
+        renderFace(poseStack, consumer, sprite, new Vector3f(0, -1, 0), 'y', minY - SKEW, 'x', 'z', minX, maxX, minZ, maxZ, color, light);
+        renderFace(poseStack, consumer, sprite, new Vector3f(0, 1, 0), 'y', maxY + SKEW, 'x', 'z', minX, maxX, minZ, maxZ, color, light);
 
-        renderFace(poseStack, consumer, sprite, new Vector3f(0, 0, -1), 'z', minZ - skew, 'x', 'y', minX, maxX, minY, maxY, color, light);
-        renderFace(poseStack, consumer, sprite, new Vector3f(0, 0, 1), 'z', maxZ + skew, 'x', 'y', minX, maxX, minY, maxY, color, light);
+        renderFace(poseStack, consumer, sprite, new Vector3f(0, 0, -1), 'z', minZ - SKEW, 'x', 'y', minX, maxX, minY, maxY, color, light);
+        renderFace(poseStack, consumer, sprite, new Vector3f(0, 0, 1), 'z', maxZ + SKEW, 'x', 'y', minX, maxX, minY, maxY, color, light);
 
-        renderFace(poseStack, consumer, sprite, new Vector3f(-1, 0, 0), 'x', minX - skew, 'z', 'y', minZ, maxZ, minY, maxY, color, light);
-        renderFace(poseStack, consumer, sprite, new Vector3f(1, 0, 0), 'x', maxX + skew, 'z', 'y', minZ, maxZ, minY, maxY, color, light);
+        renderFace(poseStack, consumer, sprite, new Vector3f(-1, 0, 0), 'x', minX - SKEW, 'z', 'y', minZ, maxZ, minY, maxY, color, light);
+        renderFace(poseStack, consumer, sprite, new Vector3f(1, 0, 0), 'x', maxX + SKEW, 'z', 'y', minZ, maxZ, minY, maxY, color, light);
+    }
+
+    public static void renderLight(PoseStack poseStack, VertexConsumer consumer,
+                                         float minX, float minY, float minZ,
+                                         float maxX, float maxY, float maxZ,
+                                         int color, float thickness) {
+        var atlas = Minecraft.getInstance().getModelManager().getAtlas(InventoryMenu.BLOCK_ATLAS);
+        renderCube(poseStack, consumer, atlas.getSprite(ResourceLocation.parse("balance:block/white_concrete")),
+                minX - thickness, minY - thickness, minZ - thickness,
+                maxX + thickness, maxY + thickness, maxZ + thickness,
+                color, 0xF000F0);
     }
 }
