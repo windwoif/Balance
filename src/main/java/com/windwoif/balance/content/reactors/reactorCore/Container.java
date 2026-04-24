@@ -3,12 +3,9 @@ package com.windwoif.balance.content.reactors.reactorCore;
 import com.mojang.logging.LogUtils;
 import com.windwoif.balance.Balance;
 import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemicals;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.RegistryManager;
@@ -21,11 +18,18 @@ import static com.windwoif.balance.Balance.CHEMICAL_REGISTRY_KEY;
 public class Container {
     private float temperature;
     protected float heat;
+    private double structurePressure;
+    private final int Area;
+    private final int Height;
     private final long Volume;
     private final long BasicHeatCapacity;
+    private double TotalVolume;
 
-    public Container(long volume, long temp, long heatCapacity){
-        Volume = volume;
+
+    public Container(int height, int area, long temp, long heatCapacity) {
+        Area = area;
+        Height = height;
+        Volume = area * height * 1000L;
         BasicHeatCapacity = heatCapacity;
         heat = temp * heatCapacity;
         temperature = temp;
@@ -46,18 +50,23 @@ public class Container {
         sortedPhases.add(phases.get(Chemical.State.MOLTEN_SALT));
         sortedPhases.add(phases.get(Chemical.State.MOLTEN_METAL));
     }
+
     private Runnable markChangedCallback;
+
     public void setMarkChangedCallback(Runnable callback) {
         this.markChangedCallback = callback;
     }
+
     protected void markChanged() {
         if (markChangedCallback != null) markChangedCallback.run();
     }
+
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    protected void tick(){
+    protected void tick() { //add updateFlowSystem() when Overriding
         updateTemp();
         updateVolume();
+        updatePressure();
         updateDensity();
         updatePhaseOrder();
     }
@@ -66,7 +75,8 @@ public class Container {
         float heatCapacity = calculateHeatCapacity();
         temperature = heat / heatCapacity;
     }
-    private float calculateHeatCapacity(){
+
+    private float calculateHeatCapacity() {
         return BasicHeatCapacity + contents.entrySet().stream()
                 .map(a -> a.getKey().getHeatCapacity(a.getValue()))
                 .reduce(0f, Float::sum);
@@ -75,6 +85,7 @@ public class Container {
     private final Map<Chemical, Long> contents = new HashMap<>();
     private final EnumMap<Chemical.State, Phase> phases = new EnumMap<>(Chemical.State.class);
     private final List<Phase> sortedPhases = new ArrayList<>();
+    private final List<PhaseInterface> phaseInterfaces = new ArrayList<>();
 
     public Phase getPhase(Chemical.State state) {
         return phases.get(state);
@@ -83,29 +94,73 @@ public class Container {
     private Map<Chemical, Long> getChemicalMap(Chemical.State state) {
         return getPhase(state).getContents();
     }
+
     public double getContentVolume(Chemical.State state) {
         return getPhase(state).getVolume();
     }
 
-    private void updateVolume(){
-        double occupied = 0;
-        for (Phase phase : sortedPhases) {
+    public record PressureInfo(double pressure, Phase phase) {}
+    public record PhaseInterface(double pressure, Phase phaseBelow, Phase phaseAbove, double height) {}
+
+    protected void updateFlowSystem() {
+        sortedPhases.forEach(Phase::renew);
+    }
+
+    private void updateVolume() {
+        sortedPhases.forEach(phase -> {
             if (phase.getState() != Chemical.State.GAS) {
                 phase.updateVolume();
-                occupied += phase.getVolume();
+            }
+        });
+        double occupied = sortedPhases.stream()
+                .filter(p -> p.getState() != Chemical.State.GAS)
+                .mapToDouble(Phase::getVolume)
+                .sum();
+        double x = Volume - occupied;
+        double a = 1;
+        double gasVolume = (Math.sqrt(x * x + a) + x) / 2.0;
+        getPhase(Chemical.State.GAS).setVolume(Math.max(0.0, gasVolume));
+        TotalVolume = occupied + gasVolume;
+    }
+
+    private void updatePressure() {
+        final int k = 1000;
+        final double R = 8.314;
+        final double g = 9.8;
+
+        phaseInterfaces.clear();
+
+        structurePressure = ((TotalVolume - Volume) * k);
+        double heightRatio = Height / TotalVolume;
+
+        double currentPressure = structurePressure + getPhase(Chemical.State.GAS).getAmountOfSubstance() * R * temperature;
+        double currentHeight = Height;
+        Phase lastPhase = null;
+        for (Phase phase : sortedPhases) {
+            if (!phase.isEmpty() || phase.getState() == Chemical.State.GAS) {
+                phaseInterfaces.add(new PhaseInterface(currentPressure, phase, lastPhase, currentHeight));
+                lastPhase = phase;
+                currentHeight -= heightRatio * phase.getVolume();
+
+                currentPressure += phase.getMass() * g / Area;
+                phase.setPressure(currentPressure);
             }
         }
-        phases.get(Chemical.State.GAS).setVolume(Volume - occupied);
+        phaseInterfaces.add(new PhaseInterface(currentPressure, null, lastPhase, 0));
     }
 
     private void updateDensity() {
-        phases.forEach((state, phase) -> phase.updateDensity());
+        sortedPhases.forEach(phase -> {
+            phase.updateMass();
+            phase.updateDensity();
+        });
     }
 
     private void syncStateMaps() {
-        phases.forEach((state, phase) -> phase.clear());
+        sortedPhases.forEach(Phase::clear);
         contents.forEach(this::updateStateMaps);
     }
+
     public void updateStateMaps(Chemical chemical, long amount) {
         Map<Chemical, Long> targetMap = getChemicalMap(chemical.state());
         if (amount > 0) targetMap.put(chemical, amount);
@@ -113,12 +168,15 @@ public class Container {
     }
 
     private void updatePhaseOrder() {
-        sortedPhases.sort(Comparator.comparingDouble(Phase::getDensity).reversed());
+        sortedPhases.sort(Comparator.comparingDouble(Phase::getDensity));
     }
-
 
     public List<Phase> getSortedPhases() {
         return sortedPhases;
+    }
+
+    public List<PhaseInterface> getPhaseInterfaces(int yBottom, int yTop) {
+        return phaseInterfaces.stream().filter(a -> yBottom <= a.height && a.height <= yTop).toList();
     }
 
     protected void changeChemical(Chemical chemical, long amount) {
@@ -131,8 +189,17 @@ public class Container {
     }
 
     public void changeChemical(Chemical chemical, long amount, float temperature) {
-        changeChemical(chemical, amount);
-        heat += chemical.getHeatCapacity(amount) * temperature;
+         changeChemical(chemical, amount);
+        float deltaHeat = chemical.getHeatCapacity(amount) * temperature;
+        heat += deltaHeat;
+    }
+
+    public long tryChangeChemical(Chemical chemical, long amount, float temperature) {
+        amount = Math.min(contents.get(chemical), -amount);
+        changeChemical(chemical, -amount);
+        float deltaHeat = chemical.getHeatCapacity(amount) * temperature;
+        heat -= deltaHeat;
+        return amount;
     }
 
     public double getConcentration(Chemical chemical) {
@@ -141,6 +208,23 @@ public class Container {
             case ORGANIC, AQUEOUS, GAS -> amount / getContentVolume(chemical.state());
             default -> 1;
         };
+    }
+
+    public PressureInfo getPressureInfo(double absoluteHeight) {
+        if (phaseInterfaces.isEmpty() || absoluteHeight < 0.0 || absoluteHeight > Height) {
+            return new PressureInfo(0.0, null);
+        }
+        for (int i = 0; i < phaseInterfaces.size() - 1; i++) {
+            PhaseInterface upper = phaseInterfaces.get(i);
+            PhaseInterface lower = phaseInterfaces.get(i + 1);
+            if (absoluteHeight <= upper.height && absoluteHeight >= lower.height) {
+                double t = (upper.height - absoluteHeight) / (upper.height - lower.height);
+                double pressure = upper.pressure + t * (lower.pressure - upper.pressure);
+                Phase phase = upper.phaseBelow;
+                return new PressureInfo(pressure, phase);
+            }
+        }
+        return new PressureInfo(0.0, null);
     }
 
     public void LoadChemicals(ListTag chemicalsList) {
@@ -158,6 +242,7 @@ public class Container {
             }
         }
     }
+
     public ListTag SaveChemicals() {
         ListTag chemicalsList = new ListTag();
         contents.forEach((chemical, amount) -> {
@@ -172,12 +257,14 @@ public class Container {
         });
         return chemicalsList;
     }
+
     public CompoundTag serializeNBT() {
         CompoundTag tag = new CompoundTag();
         tag.put("Chemicals", SaveChemicals());
         tag.putFloat("Heat", heat);
         return tag;
     }
+
     public void deserializeNBT(CompoundTag tag) {
         if (tag.contains("Chemicals", Tag.TAG_LIST)) {
             LoadChemicals(tag.getList("Chemicals", Tag.TAG_COMPOUND));
@@ -190,12 +277,19 @@ public class Container {
     public double getChemicalAmount(Chemical chemical) {
         return (double) contents.getOrDefault(chemical, 0L) / 1000;
     }
+
     public long getVolume() {
         return Volume;
     }
+
+    public double getTotalVolume() {
+        return TotalVolume;
+    }
+
     public float getTemperature() {
         return temperature;
     }
+
     public void light() {
         temperature += 600;
     }//TODO

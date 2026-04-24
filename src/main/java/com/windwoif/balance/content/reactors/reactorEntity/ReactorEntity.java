@@ -9,6 +9,8 @@ import com.windwoif.balance.AllItems;
 import com.windwoif.balance.Balance;
 import com.windwoif.balance.content.reactors.reactorCore.Phase;
 import com.windwoif.balance.content.reactors.reactorCore.Reactor;
+import com.windwoif.balance.content.reactors.reactorCore.ReactorConnection;
+import com.windwoif.balance.content.reactors.reactorCore.ReactorConnectionManager;
 import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
 import com.windwoif.balance.content.reactors.recipe.material.Material;
 import net.createmod.catnip.math.VecHelper;
@@ -49,11 +51,7 @@ import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.RegistryManager;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static com.windwoif.balance.dimension.DimensionAtmosphere.getAtmosphere;
 import static net.minecraft.world.item.Items.FLINT_AND_STEEL;
@@ -67,6 +65,8 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
     private Reactor reactor;
     private List<PhaseData> clientPhases = Collections.emptyList();
     final int environmentTemperature;
+    private long lastConnectionRefresh = 0;
+    private static final long CONNECTION_REFRESH_INTERVAL = 20;
 
     public ReactorEntity(EntityType<?> type, Level world) {
         super(type, world);
@@ -80,7 +80,7 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
         this(AllEntityTypes.REACTOR_ENTITY.get(), world);
         setBoundingBox(boundingBox);
         resetPositionToBB();
-        this.reactor = new Reactor(getVolume(), environmentTemperature, 10000);
+        this.reactor = new Reactor(getHeight(), getArea(), environmentTemperature, 10000);
         if (!level().isClientSide) {
             updateClientPhases();
         }
@@ -119,15 +119,32 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
             this.entityData.set(BURNING, burning);
             updateClientPhases();
         }
+
+        if (!level().isClientSide) {
+            long now = level().getGameTime();
+            if (now - lastConnectionRefresh >= CONNECTION_REFRESH_INTERVAL) {
+                updateConnections();
+                lastConnectionRefresh = now;
+            }
+        }
     }
 
     public void addChemical(Chemical chemical, long amount) {
         if (reactor != null) reactor.changeChemical(chemical, amount, environmentTemperature);
     }
 
-    public long getVolume() {
+    private int getHeight() {
         AABB bb = getBoundingBox();
-        return (long) (bb.getXsize() * bb.getYsize() * bb.getZsize()) * 1000L;
+        return (int) bb.getYsize();
+    }
+
+    private int getArea() {
+        AABB bb = getBoundingBox();
+        return (int) (bb.getXsize() * bb.getZsize());
+    }
+
+    public double getTotalVolume() {
+        return reactor.getTotalVolume();
     }
 
     public Reactor getReactor() {
@@ -143,6 +160,7 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
                 for (Tag tag : list) {
                     phases.add(PhaseData.fromNBT((CompoundTag) tag));
                 }
+                Collections.reverse(phases);
                 clientPhases = phases;
             }
             return clientPhases;
@@ -203,7 +221,6 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
         ListTag phasesList = new ListTag();
         for (Phase phase : reactor.getSortedPhases()) {
             phase.updateVolume();
-            if (phase.getVolume() <= 0.001) continue;
             PhaseData data = new PhaseData(
                     phase.getState(),
                     phase.getVolume(),
@@ -229,7 +246,7 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
     public void readAdditionalSaveData(CompoundTag compound) {
         Vec3 pos = position();
         setBoundingBox(readBoundingBox(compound).move(pos));
-        this.reactor = new Reactor(getVolume(), environmentTemperature, 10000);
+        this.reactor = new Reactor(getHeight(), getArea(), environmentTemperature, 10000);
         if (compound.contains("ReactorData", Tag.TAG_COMPOUND)) {
             reactor.deserializeNBT(compound.getCompound("ReactorData"));
         }
@@ -365,4 +382,45 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
     public PortalInfo findDimensionEntryPoint(ServerLevel pDestination) {
         return super.findDimensionEntryPoint(pDestination);
     }
+
+    private void updateConnections() {
+        if (level().isClientSide) return;
+        ReactorConnectionManager manager = ReactorConnectionManager.get(level());
+        if (manager == null) return;
+
+        Set<ReactorEntity> neighbors = findAdjacentReactors();
+        Set<ReactorConnection> current = manager.getConnections(this);
+
+        for (ReactorConnection conn : current) {
+            ReactorEntity other = conn.getOther(this);
+            if (!neighbors.contains(other)) {
+                manager.removeConnection(this, other);
+            }
+        }
+
+        for (ReactorEntity neighbor : neighbors) {
+            if (!manager.hasConnection(this, neighbor)) {
+                manager.addConnection(this, neighbor);
+            }
+        }
+    }
+
+    private Set<ReactorEntity> findAdjacentReactors() {
+        AABB box = getBoundingBox().inflate(1);
+        List<ReactorEntity> list = level().getEntitiesOfClass(ReactorEntity.class, box, e -> e != this);
+        return new HashSet<>(list);
+    }
+
+    @Override
+    public void onRemovedFromWorld() {
+        if (!level().isClientSide) {
+            ReactorConnectionManager manager = ReactorConnectionManager.get(level());
+            if (manager != null) {
+                manager.removeAllConnections(this);
+            }
+        }
+        super.onRemovedFromWorld();
+    }
+
+
 }

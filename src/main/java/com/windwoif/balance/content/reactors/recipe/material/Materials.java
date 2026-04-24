@@ -40,7 +40,7 @@ public class Materials {
     public static final RegistryObject<Material> TEST2 = Balance.MATERIALS.register("lapis",
             () -> new Material("lapis",
                     phase -> phase.getState() == Chemical.State.MOLTEN_METAL,
-                    Map.of(Chemicals.WATER.get(), NUGGET_BASE)));
+                    Map.of(Chemicals.WATER.get(), NUGGET_BASE * 10)));
     public static final RegistryObject<Material> TEST3 = Balance.MATERIALS.register("quartz",
             () -> new Material("quartz",
                     phase -> phase.getState() == Chemical.State.MOLTEN_METAL,

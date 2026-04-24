@@ -2,12 +2,7 @@ package com.windwoif.balance.content.reactors.reactorCore;
 
 import com.windwoif.balance.Balance;
 import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemicals;
 import com.windwoif.balance.content.reactors.recipe.reaction.Reaction;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.RegistryManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,8 +19,8 @@ public class Reactor extends Container {
 
     private List<Reaction> usableReactions = new ArrayList<>(RegistryManager.ACTIVE.getRegistry(Balance.REACTION_REGISTRY_KEY).getValues());
 
-    public Reactor(long volume,  long temperature, long heatCapacity) {
-        super(volume, temperature, heatCapacity);
+    public Reactor(int height, int area, long temperature, long heatCapacity) {
+        super(height, area, temperature, heatCapacity);
     }
 
     public void tick(float timeStep) {
@@ -33,6 +28,8 @@ public class Reactor extends Container {
         Map<Chemical, Long> finalChange = getFinalChange(getTotalReactPlan(timeStep));
         finalChange.forEach(this::changeChemical);
         updateHeat(finalChange);
+        tick();
+        updateFlowSystem();
     }
 
     private void updateHeat(Map<Chemical, Long> finalChange) {
@@ -50,13 +47,12 @@ public class Reactor extends Container {
                             double equilibrium = reaction.getEq(getTemperature());
                             double forwardRate = calculatePartRate(k_forwardRate, reaction.getReactants());
                             double backwardRate = calculatePartRate(k_forwardRate / equilibrium, reaction.getProducts());
-                            double totalRate = (forwardRate - backwardRate) * time * switch(reaction.state) {
+                            return (forwardRate - backwardRate) * time * switch(reaction.state) {
                                 case LIQUID_NONPOLAR -> getContentVolume(Chemical.State.LIQUID_NONPOLAR);
                                 case LIQUID_POLAR ->  getContentVolume(Chemical.State.LIQUID_POLAR);
                                 case GAS ->  getContentVolume(Chemical.State.GAS);
                                 case SOLID ->  getContentVolume(Chemical.State.SOLID);
                             };
-                            return totalRate;
                         }//TODO
                 ));
     }
@@ -135,8 +131,6 @@ public class Reactor extends Container {
                         entry -> (long)(entry.getValue() * 1000)
                 ));
     }
-
-
 
     public List<Reaction> getUsableReactions() { return usableReactions; }
 }

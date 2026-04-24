@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import static com.windwoif.balance.Balance.MODID;
+import static net.minecraft.resources.ResourceLocation.fromNamespaceAndPath;
 
 public record Material(
         String name, //tag name
@@ -39,7 +40,7 @@ public record Material(
             return Optional.empty();
         }
         IForgeRegistry<Material> materialRegistry = RegistryManager.ACTIVE.getRegistry(Balance.MATERIAL_REGISTRY_KEY);
-        Material material = materialRegistry.getValue(new ResourceLocation(MODID,materialName));
+        Material material = materialRegistry.getValue(fromNamespaceAndPath(MODID,materialName));
         if (material == null) return Optional.empty();
 
         int factor = FORMS.get(form);

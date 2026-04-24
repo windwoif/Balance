@@ -4,6 +4,7 @@ import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Phase {
@@ -12,10 +13,20 @@ public class Phase {
     }
     private final Chemical.State state;
     private final Map<Chemical, Long> contents = new HashMap<>();
+    private Map<Chemical, Long> RecentContents = new HashMap<>();
+    private final Map<ReactorConnection, Double> connectionDemands = new HashMap<>();
+    private double demandRatio = UNUPDATED;
     private double volume;
     private double density;
+    private double mass;
+    private double pressure;
+    private static final double UNUPDATED = -1;
+
     public void clear(){
         contents.clear();
+    }
+    public boolean isEmpty(){
+        return contents.isEmpty();
     }
     public Map<Chemical, Long> getContents() {
         return contents;
@@ -30,16 +41,31 @@ public class Phase {
     public double getVolume() {
         return volume;
     }
+    public void setPressure(double pressure) {
+        this.pressure = pressure;
+    }
+    public double getPressure() {
+        return pressure;
+    }
     public void updateDensity() {
-        density = contents.entrySet().stream().mapToDouble(a -> a.getKey().molarMass() * a.getValue() / 1000).sum() / volume;
+        density = Math.max(mass / volume, 0);
     }
     public double getDensity() {
         return density;
     }
+    public void updateMass() {
+        mass = contents.entrySet().stream().mapToDouble(a -> a.getKey().getMass(a.getValue())).sum();
+    }
+    public double getMass() {
+        return mass;
+    }
+    public int getAmountOfSubstance() {
+        return contents.values().stream().mapToInt(Long::intValue).sum() / 1000;
+    }
     public int getRenderColor() {
         if (contents.isEmpty()) return 0x00000000;
 
-        double totalMoles = contents.values().stream().mapToLong(Long::longValue).sum() / 1_000_000.0;
+        double totalMoles = getAmountOfSubstance();
         if (totalMoles <= 0) return 0x00000000;
 
         Chemical.State state = this.state;
@@ -47,8 +73,7 @@ public class Phase {
             double totalR = 0, totalG = 0, totalB = 0;
             for (Map.Entry<Chemical, Long> entry : contents.entrySet()) {
                 Chemical chem = entry.getKey();
-                long micromoles = entry.getValue();
-                double moles = micromoles / 1_000_000.0;
+                double moles = entry.getValue() / 1000.0;
                 double fraction = moles / totalMoles;
 
                 int argb = chem.ARGB();
@@ -99,7 +124,40 @@ public class Phase {
                 a -> a.getValue() / volume * 1000));
     }
 
+    public void demand(ReactorConnection connection, double amount) {
+        if (!(amount >= 0)) return;
+        amount = amount * amount / (amount + 1);
+        connectionDemands.merge(connection, Math.min(amount,1e5), Double::sum);
+    }
+
+    public Map<Chemical, Long> getFlowAmount(ReactorConnection connection) {
+        double amount = connectionDemands.getOrDefault(connection, 0d);
+        Function<Map.Entry<Chemical, Long>, Map.Entry<Chemical, Long>> mapper;
+        if (demandRatio == UNUPDATED) {
+            updateDemandRatio();
+            mapper = a -> Map.entry(a.getKey(), (long) Math.ceil(a.getKey().getEffectiveVolume(a.getValue()) * demandRatio * amount / 2));
+        } else  {
+            mapper = a -> Map.entry(a.getKey(), (long) Math.floor(a.getKey().getEffectiveVolume(a.getValue()) * demandRatio * amount / 2));
+        }
+        return RecentContents.entrySet().stream().map(mapper).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private void updateDemandRatio() {
+        demandRatio = Math.min(1, volume / connectionDemands.values().stream().mapToDouble(v -> v).sum());
+    }
+
+    public void renew() {
+        connectionDemands.clear();
+        demandRatio = UNUPDATED;
+        RecentContents = new HashMap<>(contents);
+    }
+
     public Chemical.State getState() {
         return state;
+    }
+
+    @Override
+    public String toString() {
+        return  String.format("%s", state);
     }
 }

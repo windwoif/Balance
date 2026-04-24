@@ -56,7 +56,7 @@ public class ReactorRenderer extends EntityRenderer<ReactorEntity> {
 				bb.minZ - entity.getZ() + d/2);
 
 		VertexConsumer consumer = bufferSource.getBuffer(ModRenderTypes.TRANSLUCENT_NO_CULL);
-		double totalVolume = entity.getVolume();
+		double totalVolume = phases.stream().mapToDouble(PhaseData::volume).sum();
 		double accumulatedVolume = 0.0;
 
 		for (PhaseData phase : phases) {

@@ -27,7 +27,7 @@ public class DebugBlockEntity extends BlockEntity {
 
     public DebugBlockEntity(BlockPos pos, BlockState state) {
         super(AllBlockEntityTypes.DEBUG_REACTOR_ENTITY.get(), pos, state);
-        reactor = new Reactor(1000000 , level != null ? getAtmosphere(level.dimension()).temperature() : 0, 10000);
+        reactor = new Reactor(1000000 , level != null ? getAtmosphere(level.dimension()).temperature() : 0, 1, 10000);
         reactor.setMarkChangedCallback(this::setChanged);
         IForgeRegistry<Reaction> reactionRegistry = RegistryManager.ACTIVE.getRegistry(Balance.REACTION_REGISTRY_KEY);
         if (reactionRegistry != null) {

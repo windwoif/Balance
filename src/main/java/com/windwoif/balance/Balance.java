@@ -1,6 +1,7 @@
 package com.windwoif.balance;
 
 import com.mojang.logging.LogUtils;
+import com.windwoif.balance.content.reactors.reactorCore.ReactorConnectionManager;
 import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
 import com.windwoif.balance.content.reactors.recipe.chemical.Chemicals;
 import com.windwoif.balance.content.reactors.recipe.material.Material;
@@ -13,6 +14,8 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -23,6 +26,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -32,6 +36,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.*;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 
@@ -131,4 +136,24 @@ public class Balance
             LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
         }
     }
+
+    @Mod.EventBusSubscriber(modid = Balance.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+    public static class ServerEvents {
+        @SubscribeEvent
+        public static void onServerTick(TickEvent.ServerTickEvent event) {
+            if (event.phase == TickEvent.Phase.END) {
+                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                if (server == null) {
+                    return;
+                }
+                for (ServerLevel level : server.getAllLevels()) {
+                    ReactorConnectionManager manager = ReactorConnectionManager.get(level);
+                    if (manager != null) {
+                        manager.tick();
+                    }
+                }
+            }
+        }
+    }
+
 }
