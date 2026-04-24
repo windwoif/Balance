@@ -59,13 +59,13 @@ public class Phase {
     public double getMass() {
         return mass;
     }
-    public int getAmountOfSubstance() {
-        return contents.values().stream().mapToInt(Long::intValue).sum() / 1000;
+    public double getAmountOfSubstance() {
+        return contents.values().stream().mapToInt(Long::intValue).sum() / 1000.0;
     }
     public int getRenderColor() {
         if (contents.isEmpty()) return 0x00000000;
 
-        double totalMoles = getAmountOfSubstance();
+        double totalMoles = getAmountOfSubstance() * 1000;
         if (totalMoles <= 0) return 0x00000000;
 
         Chemical.State state = this.state;
@@ -73,7 +73,7 @@ public class Phase {
             double totalR = 0, totalG = 0, totalB = 0;
             for (Map.Entry<Chemical, Long> entry : contents.entrySet()) {
                 Chemical chem = entry.getKey();
-                double moles = entry.getValue() / 1000.0;
+                double moles = entry.getValue();
                 double fraction = moles / totalMoles;
 
                 int argb = chem.ARGB();
