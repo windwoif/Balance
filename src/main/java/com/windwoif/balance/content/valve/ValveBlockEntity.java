@@ -1,7 +1,6 @@
 package com.windwoif.balance.content.valve;
 
 import com.windwoif.balance.AllBlockEntityTypes;
-import com.windwoif.balance.Balance;
 import com.windwoif.balance.content.reactors.reactorCore.ReactorConnection;
 import com.windwoif.balance.content.reactors.reactorCore.ReactorConnectionManager;
 import com.windwoif.balance.content.reactors.reactorEntity.ReactorEntity;
@@ -31,7 +30,6 @@ public class ValveBlockEntity extends BlockEntity {
         valve.powered = state.getValue(ValveBlock.POWERED);
 
         if (valve.connection != null && !valve.isConnectionValid()) {
-            Balance.LOGGER.debug("Valve at {}: connection invalid, removing", pos);
             valve.removeConnection();
         }
 
@@ -60,7 +58,6 @@ public class ValveBlockEntity extends BlockEntity {
         ReactorEntity front = findReactorAt(frontPos);
         ReactorEntity back = findReactorAt(backPos);
         if (front == null || back == null) {
-            Balance.LOGGER.debug("Valve at {}: cannot find reactors at {} or {}", worldPosition, frontPos, backPos);
             return;
         }
 
@@ -75,10 +72,8 @@ public class ValveBlockEntity extends BlockEntity {
                 1, 1, globalMinY, globalMaxY);
 
         if (this.connection != null) {
-            Balance.LOGGER.info("Valve at {}: created connection between {} and {}", worldPosition, front, back);
             this.connection.setActive(powered);
         } else {
-            Balance.LOGGER.warn("Valve at {}: failed to create connection", worldPosition);
         }
     }
 
@@ -87,7 +82,6 @@ public class ValveBlockEntity extends BlockEntity {
             ReactorConnectionManager manager = ReactorConnectionManager.get(serverLevel);
             if (manager != null) {
                 manager.removeConnection(connection);
-                Balance.LOGGER.debug("Valve at {}: removed connection", worldPosition);
             }
         }
         connection = null;
