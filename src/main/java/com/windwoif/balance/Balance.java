@@ -2,12 +2,12 @@ package com.windwoif.balance;
 
 import com.mojang.logging.LogUtils;
 import com.windwoif.balance.content.reactors.reactorCore.ReactorConnectionManager;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemicals;
-import com.windwoif.balance.content.reactors.recipe.material.Material;
-import com.windwoif.balance.content.reactors.recipe.material.Materials;
-import com.windwoif.balance.content.reactors.recipe.reaction.Reaction;
-import com.windwoif.balance.content.reactors.recipe.reaction.Reactions;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
+import com.windwoif.balance.content.recipe.chemical.Chemicals;
+import com.windwoif.balance.content.recipe.material.Material;
+import com.windwoif.balance.content.recipe.material.Materials;
+import com.windwoif.balance.content.recipe.reaction.Reaction;
+import com.windwoif.balance.content.recipe.reaction.Reactions;
 import com.windwoif.balance.network.BalanceNetwork;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Registry;

@@ -2,13 +2,12 @@ package com.windwoif.balance.content.reactors.debugReactor;
 
 import com.windwoif.balance.AllBlockEntityTypes;
 import com.windwoif.balance.Balance;
-import com.windwoif.balance.content.reactors.recipe.reaction.Reaction;
+import com.windwoif.balance.content.recipe.reaction.Reaction;
 import com.windwoif.balance.content.reactors.reactorCore.Reactor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;

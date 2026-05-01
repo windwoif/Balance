@@ -1,6 +1,6 @@
 package com.windwoif.balance.content.reactors.reactorEntity;
 
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
 import net.minecraft.nbt.CompoundTag;
 
 public record PhaseData(Chemical.State state, double volume, int color) {

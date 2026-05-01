@@ -1,10 +1,9 @@
 package com.windwoif.balance.content.reactors.reactorCore;
 
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Phase {
@@ -13,7 +12,6 @@ public class Phase {
     }
     private final Chemical.State state;
     private final Map<Chemical, Long> contents = new HashMap<>();
-    private Map<Chemical, Long> RecentContents = new HashMap<>();
     private final Map<ReactorConnection, Double> connectionDemands = new HashMap<>();
     private double demandRatio = UNUPDATED;
     private double volume;
@@ -60,7 +58,7 @@ public class Phase {
         return mass;
     }
     public double getAmountOfSubstance() {
-        return contents.values().stream().mapToInt(Long::intValue).sum() / 1000.0;
+        return contents.values().stream().mapToDouble(a -> a).sum() / 1000.0;
     }
     public int getRenderColor() {
         if (contents.isEmpty()) return 0x00000000;
@@ -98,7 +96,7 @@ public class Phase {
             for (Map.Entry<Chemical, Double> entry : concentrations.entrySet()) {
                 if (entry.getValue() == 0) continue;
                 Chemical chem = entry.getKey();
-                double concentration = entry.getValue();
+                double concentration = entry.getValue() /1000;
                 int argb = chem.ARGB();
                 float rBase = ((argb >> 16) & 0xFF) / 255.0f;
                 float gBase = ((argb >> 8) & 0xFF) / 255.0f;
@@ -126,20 +124,29 @@ public class Phase {
 
     public void demand(ReactorConnection connection, double amount) {
         if (!(amount >= 0)) return;
-        amount = amount * amount / (amount + 1);
         connectionDemands.merge(connection, Math.min(amount,1e5), Double::sum);
     }
 
     public Map<Chemical, Long> getFlowAmount(ReactorConnection connection) {
-        double amount = connectionDemands.getOrDefault(connection, 0d);
-        Function<Map.Entry<Chemical, Long>, Map.Entry<Chemical, Long>> mapper;
+        double demandVolume = connectionDemands.getOrDefault(connection, 0.0);
+        if (demandVolume <= 0) return Map.of();
+
         if (demandRatio == UNUPDATED) {
             updateDemandRatio();
-            mapper = a -> Map.entry(a.getKey(), (long) Math.ceil(a.getKey().getEffectiveVolume(a.getValue()) * demandRatio * amount / 2));
-        } else  {
-            mapper = a -> Map.entry(a.getKey(), (long) Math.floor(a.getKey().getEffectiveVolume(a.getValue()) * demandRatio * amount / 2));
         }
-        return RecentContents.entrySet().stream().map(mapper).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        double allocatedVolume = demandRatio * demandVolume;
+        if (allocatedVolume <= 0) return Map.of();
+
+        double phaseVolume = getVolume();
+        double volumeRatio = Math.min(1.0, allocatedVolume / phaseVolume);
+
+        Map<Chemical, Long> result = new HashMap<>();
+        for (Map.Entry<Chemical, Long> entry : contents.entrySet()) {
+            long transfer = (long) (entry.getValue() * volumeRatio);
+            if (transfer > 0) result.put(entry.getKey(), transfer);
+        }
+        return result;
     }
 
     private void updateDemandRatio() {
@@ -149,7 +156,6 @@ public class Phase {
     public void renew() {
         connectionDemands.clear();
         demandRatio = UNUPDATED;
-        RecentContents = new HashMap<>(contents);
     }
 
     public Chemical.State getState() {

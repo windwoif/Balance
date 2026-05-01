@@ -1,20 +1,18 @@
-package com.windwoif.balance.content.reactors.recipe.chemical;
+package com.windwoif.balance.content.recipe.chemical;
 
 import net.minecraftforge.registries.RegistryObject;
 
 import static com.windwoif.balance.Balance.CHEMICALS;
-import static com.windwoif.balance.content.reactors.recipe.chemical.Chemical.State.*;
+import static com.windwoif.balance.content.recipe.chemical.Chemical.State.*;
 
 public class Chemicals {
     public static void init() {}
 
     final static int lucent = 0x00FFFFFF;
 
-    // 占位物质（无色）
     public static final RegistryObject<Chemical> NULL_CHEMICAL = CHEMICALS.register("null_chemical",
             () -> new Chemical("null_chemical", GAS, 0, 0, 0, 0, 0, lucent));
 
-    // ---------- 水溶液离子----------
     public static final RegistryObject<Chemical> HYDROGEN_ION = CHEMICALS.register("hydrogen_ion",
             () -> new Chemical("H⁺", AQUEOUS, 0, 0f, 0.001f, 0f, 1.0f, lucent));
 
@@ -22,12 +20,11 @@ public class Chemicals {
             () -> new Chemical("OH⁻", AQUEOUS, -230000, -10.8f, 0.001f, 0f, 17.0f, lucent));
 
     public static final RegistryObject<Chemical> SODIUM_ION = CHEMICALS.register("sodium_ion",
-            () -> new Chemical("Na⁺", AQUEOUS, -240100, 58.5f, 0.001f, 0f, 23.0f, lucent));
+            () -> new Chemical("Na⁺", AQUEOUS, -240100, 58.5f, 0.001f, 0f, 23.0f, 0xA0249AFF));
 
     public static final RegistryObject<Chemical> CHLORIDE = CHEMICALS.register("chloride",
             () -> new Chemical("Cl⁻", AQUEOUS, -167200, 56.5f, 0.001f, 0f, 35.5f, lucent));
 
-    // ---------- 分子化合物----------
     public static final RegistryObject<Chemical> WATER = CHEMICALS.register("water",
             () -> new Chemical("H₂O", LIQUID_POLAR, -285800, 70.0f, 0.018f, 75.3f, 18.0f, 0x40FFFFFF));
 
@@ -44,18 +41,17 @@ public class Chemicals {
             () -> new Chemical("CO₂", GAS, -393500, 213.8f, 22.4f, 37.1f, 44.0f, lucent));
 
     public static final RegistryObject<Chemical> ETHANOL = CHEMICALS.register("ethanol",
-            () -> new Chemical("C₂H₅OH", ORGANIC, -277600, 160.7f, 0.058f, 112.0f, 46.0f, 0x40FFFFFF));
+            () -> new Chemical("C₂H₅OH", LIQUID_NONPOLAR, -277600, 160.7f, 0.058f, 112.0f, 46.0f, 0x40FFFFFF));
 
     public static final RegistryObject<Chemical> IRON = CHEMICALS.register("iron",
-            () -> new Chemical("Fe", Chemical.State.MOLTEN_METAL, 0, 0, 0.1f, 25f, 55.85f, 0xFFFFAD00)); // 炽热橙色
+            () -> new Chemical("Fe", Chemical.State.MOLTEN_METAL, 0, 0, 0.1f, 25f, 55.85f, 0xFFFFAD00));
 
     public static final RegistryObject<Chemical> GOLD = CHEMICALS.register("gold",
-            () -> new Chemical("Au", Chemical.State.MOLTEN_METAL, 0, 0, 0.1f, 25f, 197.0f, 0xFFFFD700)); // 亮金色
+            () -> new Chemical("Au", Chemical.State.MOLTEN_METAL, 0, 0, 0.1f, 25f, 197.0f, 0xFFFFD700));
 
     public static final RegistryObject<Chemical> COPPER = CHEMICALS.register("copper",
-            () -> new Chemical("Cu", Chemical.State.MOLTEN_METAL, 0, 0, 0.1f, 25f, 63.55f, 0xFFFF5C00)); // 熔融铜橙红
+            () -> new Chemical("Cu", Chemical.State.MOLTEN_METAL, 0, 0, 0.1f, 25f, 63.55f, 0xFFFF5C00));
 
-    // ---------- 固体 ----------
     public static final RegistryObject<Chemical> SODIUM_CHLORIDE = CHEMICALS.register("sodium_chloride",
-            () -> new Chemical("NaCl", SOLID, -411200, 72.1f, 0.027f, 50.5f, 58.5f, 0xFFFFFFFF)); // 白色
+            () -> new Chemical("NaCl", SOLID, -411200, 72.1f, 0.027f, 50.5f, 58.5f, 0xB0372bff));
 }

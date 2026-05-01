@@ -1,6 +1,6 @@
-package com.windwoif.balance.content.reactors.recipe.reaction;
+package com.windwoif.balance.content.recipe.reaction;
 
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
 
 import java.util.*;
 import java.util.stream.Collectors;

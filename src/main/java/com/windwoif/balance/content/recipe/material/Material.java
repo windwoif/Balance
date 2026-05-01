@@ -1,9 +1,8 @@
-package com.windwoif.balance.content.reactors.recipe.material;
+package com.windwoif.balance.content.recipe.material;
 
 import com.windwoif.balance.Balance;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
 import com.windwoif.balance.content.reactors.reactorCore.Phase;
-import net.minecraft.resources.ResourceLocation;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.IForgeRegistry;

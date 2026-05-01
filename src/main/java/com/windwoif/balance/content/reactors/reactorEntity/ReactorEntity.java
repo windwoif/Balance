@@ -11,8 +11,8 @@ import com.windwoif.balance.content.reactors.reactorCore.Phase;
 import com.windwoif.balance.content.reactors.reactorCore.Reactor;
 import com.windwoif.balance.content.reactors.reactorCore.ReactorConnection;
 import com.windwoif.balance.content.reactors.reactorCore.ReactorConnectionManager;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
-import com.windwoif.balance.content.reactors.recipe.material.Material;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
+import com.windwoif.balance.content.recipe.material.Material;
 import net.createmod.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -387,17 +387,14 @@ public class ReactorEntity extends Entity implements IEntityAdditionalSpawnData,
         if (level().isClientSide) return;
         ReactorConnectionManager manager = ReactorConnectionManager.get(level());
         if (manager == null) return;
-
         Set<ReactorEntity> neighbors = findAdjacentReactors();
-        Set<ReactorConnection> current = manager.getConnections(this);
-
-        for (ReactorConnection conn : current) {
+        Set<ReactorConnection> currentConnections = new HashSet<>(manager.getConnections(this));
+        for (ReactorConnection conn : currentConnections) {
             ReactorEntity other = conn.getOther(this);
-            if (!neighbors.contains(other)) {
+            if (!neighbors.contains(other) && !conn.isMechanical()) {
                 manager.removeConnection(this, other);
             }
         }
-
         for (ReactorEntity neighbor : neighbors) {
             if (!manager.hasConnection(this, neighbor)) {
                 manager.addConnection(this, neighbor);

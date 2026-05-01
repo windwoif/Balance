@@ -1,6 +1,6 @@
 package com.windwoif.balance.dimension;
 
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
 
 import java.util.HashMap;
 

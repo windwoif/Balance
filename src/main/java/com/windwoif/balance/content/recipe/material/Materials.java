@@ -1,8 +1,8 @@
-package com.windwoif.balance.content.reactors.recipe.material;
+package com.windwoif.balance.content.recipe.material;
 
 import com.windwoif.balance.Balance;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemicals;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
+import com.windwoif.balance.content.recipe.chemical.Chemicals;
 import net.minecraftforge.registries.RegistryObject;
 
 import java.util.Map;

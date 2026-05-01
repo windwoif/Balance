@@ -4,9 +4,8 @@ import com.windwoif.balance.content.reactors.reactorEntity.ReactorEntity;
 import net.minecraft.world.phys.AABB;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ReactorConnection {
@@ -15,17 +14,31 @@ public class ReactorConnection {
     private final Reactor lower;
     private final Reactor upper;
     private final ConnectionType type;
-    private int connectionOffset;
+    private int offsetLower;
+    private int offsetUpper;
     private int contactWidth;
     private int contactHeight;
     private boolean active = true;
-    private static final double TIME_STEP = 10; // 秒，与实际游戏 tick 匹配
+    private boolean mechanical = false;
+    private static final double STEP_LENGTH = 0.05;
+    private static final double SPREAD_RATE = 0.05;
     private List<Container.PhaseInterface> interfaces;
 
-    // 平滑相关字段
-    private final Map<Phase, Double> rawDemand = new HashMap<>();
-    private final Map<Phase, Double> lastSmoothedDemand = new HashMap<>();
-    private static final double FLOW_SMOOTHING = 0.2; // 新值权重，越小惯性越大
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public ReactorEntity getLowerEntity() {
+        return lowerEntity;
+    }
+
+    public ReactorEntity getUpperEntity() {
+        return upperEntity;
+    }
+
+    public boolean isMechanical() {
+        return mechanical;
+    }
 
     public enum ConnectionType {
         VERTICAL,
@@ -52,6 +65,34 @@ public class ReactorConnection {
             updateInterfaces();
             calculateFlow();
         }
+        else if (type == ConnectionType.HORIZONTAL) {
+            calculateHorizontalFlow();
+        }
+    }
+
+    public ReactorConnection(ReactorEntity a, ReactorEntity b, ConnectionType type,
+                             int contactWidth, int contactHeight,
+                             double globalMinY, double globalMaxY) {
+        // 按高度排序
+        if (a.getBoundingBox().minY <= b.getBoundingBox().minY) {
+            this.lowerEntity = a;
+            this.upperEntity = b;
+        } else {
+            this.lowerEntity = b;
+            this.upperEntity = a;
+        }
+        this.lower = this.lowerEntity.getReactor();
+        this.upper = this.upperEntity.getReactor();
+        this.type = type;
+        this.contactWidth = contactWidth;
+        this.contactHeight = contactHeight;
+
+        double lowerBottom = lowerEntity.getBoundingBox().minY;
+        double upperBottom = upperEntity.getBoundingBox().minY;
+        this.offsetLower = (int) (globalMinY - lowerBottom);
+        this.offsetUpper = (int) (globalMinY - upperBottom);
+        this.active = true;
+        this.mechanical = true;
     }
 
     public void apply() {
@@ -66,12 +107,15 @@ public class ReactorConnection {
             b.changeChemical(entry.getKey(), a.tryChangeChemical(entry.getKey(), -entry.getValue(), temperature) , temperature);
         });
     }
+
     private void updateInterfaces() {
-        var interfacesLower = lower
-                .getPhaseInterfaces(connectionOffset, contactHeight + connectionOffset)
-                .stream().map(a -> {
-                    double height = a.height() - connectionOffset;
-                    Container.PressureInfo pressureInfo = upper.getPressureInfo(height);
+        // 转换 lower 容器界面
+        Stream<Container.PhaseInterface> lowerStream = lower
+                .getPhaseInterfaces(offsetLower, offsetLower + contactHeight)
+                .stream()
+                .map(a -> {
+                    double height = a.height() - offsetLower;
+                    Container.PressureInfo pressureInfo = upper.getPressureInfo(height + offsetUpper);
                     double pressure = pressureInfo.pressure() - a.pressure();
                     if (pressure > 0.0) {
                         Phase phase = pressureInfo.phase();
@@ -79,10 +123,13 @@ public class ReactorConnection {
                     }
                     return new Container.PhaseInterface(pressure, a.phaseBelow(), a.phaseAbove(), height);
                 });
-        var interfacesUpper = upper.getPhaseInterfaces(0, contactHeight)
-                .stream().map(a -> {
-                    double height = a.height();
-                    Container.PressureInfo pressureInfo = lower.getPressureInfo(height + connectionOffset);
+
+        Stream<Container.PhaseInterface> upperStream = upper
+                .getPhaseInterfaces(offsetUpper, offsetUpper + contactHeight)
+                .stream()
+                .map(a -> {
+                    double height = a.height() - offsetUpper;
+                    Container.PressureInfo pressureInfo = lower.getPressureInfo(height + offsetLower);
                     double pressure = a.pressure() - pressureInfo.pressure();
                     if (pressure > 0.0) {
                         return new Container.PhaseInterface(pressure, a.phaseBelow(), a.phaseAbove(), height);
@@ -90,76 +137,59 @@ public class ReactorConnection {
                     Phase phase = pressureInfo.phase();
                     return new Container.PhaseInterface(pressure, phase, phase, height);
                 });
-        interfaces = Stream.concat(interfacesLower, interfacesUpper)
+
+        Container.PhaseInterface bottom = createVirtualInterface(0.0);
+        Container.PhaseInterface top = createVirtualInterface(contactHeight);
+
+        interfaces = Stream.of(Stream.of(bottom, top), lowerStream, upperStream)
+                .flatMap(s -> s)
                 .sorted(Comparator.comparingDouble(Container.PhaseInterface::height))
-                .toList();
+                .collect(Collectors.toList());
+    }
+
+    private Container.PhaseInterface createVirtualInterface(double localHeight) {
+        double lowerGlobal = offsetLower + localHeight;
+        double upperGlobal = offsetUpper + localHeight;
+        Container.PressureInfo lowerInfo = lower.getPressureInfo(lowerGlobal);
+        Container.PressureInfo upperInfo = upper.getPressureInfo(upperGlobal);
+        double pressure = upperInfo.pressure() - lowerInfo.pressure();
+        Phase phase = pressure > 0? upperInfo.phase():lowerInfo.phase();
+        return new Container.PhaseInterface(pressure, phase, phase, localHeight);
     }
 
     private void calculateFlow() {
-        rawDemand.clear();
         int n = interfaces.size();
-        if (n < 2) return;
-
-        Container.PhaseInterface lowerIface = interfaces.get(0);
+        Container.PhaseInterface lower = interfaces.get(0);
         for (int i = 0; i < n - 1; i++) {
-            Container.PhaseInterface upperIface = interfaces.get(i + 1);
-            double h1 = lowerIface.height();
-            double h2 = upperIface.height();
-            if (Math.abs(h1 - h2) < 1e-12) continue;
+            Container.PhaseInterface upper = interfaces.get(i + 1);
+            double h1 = lower.height();
+            double h2 = upper.height();
+            if (h1 == h2) continue;
+            double p1 = lower.pressure();
+            double p2 = upper.pressure();
+            Phase phase1 = lower.phaseAbove();
+            Phase phase2 = upper.phaseBelow();
+            double density = (phase1.getDensity() + phase2.getDensity()) / 2;
 
-            double p1 = lowerIface.pressure();
-            double p2 = upperIface.pressure();
-            Phase phase1 = lowerIface.phaseAbove();
-            Phase phase2 = upperIface.phaseBelow();
-            double density = (phase1.getDensity() + phase2.getDensity()) / 2.0;
-            if (density <= 0) density = 1.0;
 
             if (phase1 != phase2) {
-                double dp = p1 - p2;
-                if (Math.abs(dp) < 1e-12) continue;
-                double zero = h1 - p1 * (h1 - h2) / dp;
-                boolean hasZero = (zero > Math.min(h1, h2) && zero < Math.max(h1, h2));
-                if (hasZero) {
-                    double v1 = pressureIntegralA(Math.abs(h1 - zero), p1, density);
-                    double v2 = pressureIntegralA(Math.abs(h2 - zero), p2, density);
-                    double flow1 = (p1 > 0) ? v1 : -v1;
-                    double flow2 = (p2 > 0) ? v2 : -v2;
-                    rawDemand.merge(phase1, flow1, Double::sum);
-                    rawDemand.merge(phase2, flow2, Double::sum);
-                } else {
-                    double v = pressureIntegralB(Math.abs(h2 - h1), p1, p2, density);
-                    double flow = (p1 > p2) ? v : -v;
-                    rawDemand.merge(phase1, flow, Double::sum);
-                    rawDemand.merge(phase2, -flow, Double::sum);
-                }
+                double zero = h1 - p1 * (h1 - h2) / (p1 - p2);
+                double v1 = pressureIntegralA(Math.abs(h1 - zero), p1, density);
+                double v2 = pressureIntegralA(Math.abs(h2 - zero), p2, density);
+                phase1.demand(this, v1);
+                phase2.demand(this, v2);
             } else {
-                double v = pressureIntegralB(Math.abs(h2 - h1), p1, p2, density);
-                double flow = (p1 > p2) ? v : -v;
-                rawDemand.merge(phase1, flow, Double::sum);
+                double v = Math.abs(pressureIntegralB(h2 - h1, p1, p2, density));
+                phase1.demand(this, v);
             }
-            lowerIface = upperIface;
-        }
-
-        // 应用平滑并提交需求
-        for (Map.Entry<Phase, Double> entry : rawDemand.entrySet()) {
-            Phase phase = entry.getKey();
-            double raw = entry.getValue();
-            double last = lastSmoothedDemand.getOrDefault(phase, 0.0);
-            if (last * raw < 0) {
-                last = 0;
-            }
-            double smoothed = FLOW_SMOOTHING * raw + (1 - FLOW_SMOOTHING) * last;
-            lastSmoothedDemand.put(phase, smoothed);
-            if (Math.abs(smoothed) > 1e-12) {
-                phase.demand(this, Math.abs(smoothed));
-            }
+            lower = upper;
         }
     }
 
     private double pressureIntegralA(double height, double pressure, double density) {
         if (height <= 0 || density <= 0) return 0.0;
         double absPressure = Math.abs(pressure);
-        return TIME_STEP * 2.0/3.0 * height * contactWidth * Math.sqrt(2 * absPressure / density);
+        return STEP_LENGTH * 2.0/3.0 * height * contactWidth * Math.sqrt(2 * absPressure / density);
     }
 
     private double pressureIntegralB(double height, double pressure1, double pressure2, double density) {
@@ -168,8 +198,32 @@ public class ReactorConnection {
         double p2Abs = Math.abs(pressure2);
         double sp1 = Math.sqrt(p1Abs);
         double sp2 = Math.sqrt(p2Abs);
-        return TIME_STEP * 2.0/3.0 * Math.abs(height) * contactWidth * Math.sqrt(2 / density)
+        return STEP_LENGTH * 2.0/3.0 * Math.abs(height) * contactWidth * Math.sqrt(2 / density)
                 * (p1Abs + p2Abs + sp1 * sp2) / (sp1 + sp2);
+    }
+
+    private void calculateHorizontalFlow() {
+        Container.PressureInfo upperBottom = upper.getPressureInfo(0);
+        double lowerHeight = lower.getHeight();
+        Container.PressureInfo lowerTop = lower.getPressureInfo(lowerHeight);
+        if (lowerTop.phase().isEmpty()) lowerTop = lower.getPressureInfo(lowerHeight - 0.01);
+
+        double deltaP = lowerTop.pressure() - upperBottom.pressure();
+        if (Math.abs(deltaP) < 1e-12) return;
+
+        boolean downToUp = deltaP > 0;
+        Phase sourcePhase = downToUp ? lowerTop.phase() : upperBottom.phase();
+        Phase targetPhase = downToUp ? upperBottom.phase() : lowerTop.phase();
+
+        double density = sourcePhase.getDensity();
+        if (density <= 0) density = 1.0;
+
+        double area = contactWidth * contactHeight;
+        double absDeltaP = Math.abs(deltaP);
+        double volume = STEP_LENGTH * area * (2.0/3.0) * Math.sqrt(2 * absDeltaP / density);
+        if (volume <= 0) return;
+
+        sourcePhase.demand(this, volume);
     }
 
     private static class IntAABB {
@@ -194,12 +248,10 @@ public class ReactorConnection {
         IntAABB boxA = new IntAABB(a.getBoundingBox());
         IntAABB boxB = new IntAABB(b.getBoundingBox());
 
-        // 垂直面相邻 (VERTICAL)
         if (boxA.overlapY(boxB) > 0) {
             if (determineVertical(boxA, boxB, boxA.touchX(boxB), boxA.overlapZ(boxB))) return ConnectionType.VERTICAL;
             if (determineVertical(boxA, boxB, boxA.touchZ(boxB), boxA.overlapX(boxB))) return ConnectionType.VERTICAL;
         }
-        // 水平面相邻 (HORIZONTAL)
         if (boxA.overlapX(boxB) > 0 && boxA.overlapZ(boxB) > 0) {
             if (boxA.touchY(boxB)) {
                 int width = boxA.overlapX(boxB);
@@ -220,9 +272,11 @@ public class ReactorConnection {
             if (width > 0 && height > 0) {
                 this.contactWidth = width;
                 this.contactHeight = height;
-                int lowerBottom = (int) Math.round(lowerEntity.getBoundingBox().minY);
                 int contactMinY = Math.max(boxA.minY, boxB.minY);
-                this.connectionOffset = contactMinY - lowerBottom;
+                double lowerBottom = lowerEntity.getBoundingBox().minY;
+                double upperBottom = upperEntity.getBoundingBox().minY;
+                this.offsetLower = (int) (contactMinY - lowerBottom);
+                this.offsetUpper = (int) (contactMinY - upperBottom);
                 return true;
             }
         }
@@ -241,10 +295,4 @@ public class ReactorConnection {
 
     public void invalidate() { active = false; }
     public boolean isActive() { return active; }
-
-    public Reactor getLowerReactor() { return lower; }
-    public Reactor getUpperReactor() { return upper; }
-    public double getContactWidth() { return contactWidth; }
-    public double getContactHeight() { return contactHeight; }
-    public ConnectionType getType() { return type; }
 }

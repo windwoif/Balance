@@ -5,6 +5,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.RegistryObject;
 
+import static com.windwoif.balance.AllBlocks.VALVE_BLOCK;
 import static com.windwoif.balance.Balance.ITEMS;
 
 public class AllItems {
@@ -13,4 +14,6 @@ public class AllItems {
             () -> new BlockItem(AllBlocks.DEBUG_REACTOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> WRENCH_ITEM = ITEMS.register("wrench_item",
             () -> new WrenchItem(new Item.Properties().durability(100)));
+    public static final RegistryObject<Item> VALVE_ITEM = ITEMS.register("valve",
+            () -> new BlockItem(VALVE_BLOCK.get(), new Item.Properties()));
 }

@@ -1,9 +1,9 @@
 package com.windwoif.balance;
 
 
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
-import com.windwoif.balance.content.reactors.recipe.material.Material;
-import com.windwoif.balance.content.reactors.recipe.reaction.Reaction;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
+import com.windwoif.balance.content.recipe.material.Material;
+import com.windwoif.balance.content.recipe.reaction.Reaction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;

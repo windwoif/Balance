@@ -1,13 +1,13 @@
-package com.windwoif.balance.content.reactors.recipe.reaction;
+package com.windwoif.balance.content.recipe.reaction;
 
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemicals;
+import com.windwoif.balance.content.recipe.chemical.Chemicals;
 import net.minecraftforge.registries.RegistryObject;
 
 import java.util.Map;
 
 import static com.windwoif.balance.Balance.REACTIONS;
-import static com.windwoif.balance.content.reactors.recipe.chemical.Chemicals.*;
-import static com.windwoif.balance.content.reactors.recipe.reaction.Reaction.State.*;
+import static com.windwoif.balance.content.recipe.chemical.Chemicals.*;
+import static com.windwoif.balance.content.recipe.reaction.Reaction.State.*;
 
 public class Reactions {
 
@@ -84,6 +84,14 @@ public class Reactions {
                     LIQUID_POLAR        // 溶液环境
             ));
 
+//    public static final RegistryObject<Reaction> WATER_EVAPORATION = REACTIONS.register("water_evaporation",
+//            () -> new Reaction(
+//                    Map.of(Chemicals.WATER.get(), 1),
+//                    Map.of(Chemicals.WATER_GAS.get(), 1),
+//                    40000.0,
+//                    1e3,
+//                    LIQUID_POLAR
+//            ));
 }
 
 

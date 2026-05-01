@@ -42,11 +42,31 @@ public class ReactorConnectionManager {
         entityMap.remove(entity);
     }
 
+    public ReactorConnection createManualConnection(ReactorEntity a, ReactorEntity b,
+                                                    ReactorConnection.ConnectionType type,
+                                                    int contactWidth, int contactHeight,
+                                                    double globalMinY, double globalMaxY) {
+        ReactorConnection conn = new ReactorConnection(a, b, type, contactWidth, contactHeight, globalMinY, globalMaxY);
+        connections.add(conn);
+        entityMap.computeIfAbsent(a, k -> new HashSet<>()).add(conn);
+        entityMap.computeIfAbsent(b, k -> new HashSet<>()).add(conn);
+        return conn;
+    }
+
+    public void removeConnection(ReactorConnection conn) {
+        conn.invalidate();
+        connections.remove(conn);
+        for (ReactorEntity entity : List.of(conn.getLowerEntity(), conn.getUpperEntity())) {
+            Set<ReactorConnection> set = entityMap.get(entity);
+            if (set != null) set.remove(conn);
+        }
+    }
+
     public boolean hasConnection(ReactorEntity a, ReactorEntity b) {
         return findConnection(a, b) != null;
     }
 
-    private ReactorConnection findConnection(ReactorEntity a, ReactorEntity b) {
+    public ReactorConnection findConnection(ReactorEntity a, ReactorEntity b) {
         Set<ReactorConnection> set = entityMap.get(a);
         if (set == null) return null;
         return set.stream().filter(c -> c.contains(b)).findFirst().orElse(null);
@@ -73,7 +93,6 @@ public class ReactorConnectionManager {
         }
     }
 
-    // Debug: print all connections to console (visible in IDE)
     public void debugPrintConnections() {
         System.out.println("=== Reactor Connections ===");
         for (ReactorConnection conn : connections) {

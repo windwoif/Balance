@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.windwoif.balance.client.CubeRenderer;
 import com.windwoif.balance.client.ModRenderTypes;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -99,18 +99,6 @@ public class ReactorRenderer extends EntityRenderer<ReactorEntity> {
 
 		poseStack.popPose();
 		super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
-	}
-
-	/**
-	 * Calculate the vertical offset for the current animation frame.
-	 * The result is a value between 0 and 1 that can be used to shift the V coordinate
-	 * if the sprite is not automatically animated (e.g., when using a custom static texture).
-	 */
-	private float getWaterFrameOffset(ReactorEntity entity, float partialTick) {
-		long gameTime = entity.level().getGameTime();
-		long cycleLength = WATER_FRAME_COUNT * FRAME_TIME_TICKS;
-		long frameIndex = (gameTime / FRAME_TIME_TICKS) % WATER_FRAME_COUNT;
-		return (float) frameIndex / WATER_FRAME_COUNT;
 	}
 
 	@Override

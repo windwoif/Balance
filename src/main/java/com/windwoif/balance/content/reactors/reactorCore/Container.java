@@ -2,7 +2,7 @@ package com.windwoif.balance.content.reactors.reactorCore;
 
 import com.mojang.logging.LogUtils;
 import com.windwoif.balance.Balance;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -195,7 +195,7 @@ public class Container {
     }
 
     public long tryChangeChemical(Chemical chemical, long amount, float temperature) {
-        amount = Math.min(contents.get(chemical), -amount);
+        amount = Math.min(contents.getOrDefault(chemical, 0L), -amount);
         changeChemical(chemical, -amount);
         float deltaHeat = chemical.getHeatCapacity(amount) * temperature;
         heat -= deltaHeat;
@@ -293,4 +293,12 @@ public class Container {
     public void light() {
         temperature += 600;
     }//TODO
+
+    public double getHeight() {
+        return Height;
+    }
+
+    public Set<Chemical> getContents() {
+        return contents.keySet();
+    }
 }

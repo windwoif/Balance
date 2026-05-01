@@ -1,16 +1,13 @@
 package com.windwoif.balance.content.reactors.reactorCore;
 
 import com.windwoif.balance.Balance;
-import com.windwoif.balance.content.reactors.recipe.chemical.Chemical;
-import com.windwoif.balance.content.reactors.recipe.reaction.Reaction;
+import com.windwoif.balance.content.recipe.chemical.Chemical;
+import com.windwoif.balance.content.recipe.reaction.Reaction;
 import net.minecraftforge.registries.RegistryManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,6 +22,7 @@ public class Reactor extends Container {
 
     public void tick(float timeStep) {
         tick();
+        updateUsableReactions();
         Map<Chemical, Long> finalChange = getFinalChange(getTotalReactPlan(timeStep));
         finalChange.forEach(this::changeChemical);
         updateHeat(finalChange);
@@ -36,6 +34,7 @@ public class Reactor extends Container {
         heat -= finalChange.entrySet().stream()
                 .mapToLong(entry -> entry.getKey().enthalpy() * entry.getValue() / 1000)
                 .sum();
+        if  (heat <= 0.001) heat = 1;
     }
 
     private Map<Reaction, Double> getReactPlan(List<Reaction> stepReactions, float time) {
@@ -130,6 +129,30 @@ public class Reactor extends Container {
                         Map.Entry::getKey,
                         entry -> (long)(entry.getValue() * 1000)
                 ));
+    }
+
+    private Set<Chemical> lastChemicals = new HashSet<>();
+
+    private void updateUsableReactions() {
+        Set<Chemical> current = getContents();
+        if (current.equals(lastChemicals)) return;
+        lastChemicals = new HashSet<>(current);
+        usableReactions = getAllReactions().stream()
+                .filter(reaction -> {
+                    boolean allReactants = current.containsAll(reaction.getReactants().keySet());
+                    boolean allProducts = current.containsAll(reaction.getProducts().keySet());
+                    return allReactants || allProducts;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private static Collection<Reaction> allReactions = null;
+
+    private static Collection<Reaction> getAllReactions() {
+        if (allReactions == null) {
+            allReactions = RegistryManager.ACTIVE.getRegistry(Balance.REACTION_REGISTRY_KEY).getValues();
+        }
+        return allReactions;
     }
 
     public List<Reaction> getUsableReactions() { return usableReactions; }

@@ -1,4 +1,4 @@
-package com.windwoif.balance.content.reactors.recipe.chemical;
+package com.windwoif.balance.content.recipe.chemical;
 
 public record Chemical(String name, State state, int enthalpy, float entropy, float MolarVolume, float MolarHeatCapacity, float molarMass, int ARGB) {
     public enum State {
