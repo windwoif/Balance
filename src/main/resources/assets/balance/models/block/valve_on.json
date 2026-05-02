@@ -1,0 +1,12 @@
+{
+	"parent": "block/cube",
+	"textures": {
+		"particle": "balance:block/valve_side_on",
+		"north": "balance:block/valve_side_on",
+		"south": "balance:block/valve_side_on",
+		"east": "balance:block/valve_on",
+		"west": "balance:block/valve_on",
+		"up": "balance:block/valve_side_on",
+		"down": "balance:block/valve_side_on"
+	}
+}

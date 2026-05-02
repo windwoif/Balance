@@ -18,6 +18,6 @@ public class AllBlocks {
     public static void init() {}
     public static final RegistryObject<Block> DEBUG_REACTOR = BLOCKS.register("debug_reactor", DebugBlock::new);
     public static final RegistryObject<Block> VALVE_BLOCK = BLOCKS.register("valve",
-            () -> new ValveBlock(BlockBehaviour.Properties.of().strength(2.0f).noOcclusion()));
+            () -> new ValveBlock(BlockBehaviour.Properties.of().strength(2.0f)));
 
 }

@@ -20,7 +20,7 @@ public class Chemicals {
             () -> new Chemical("OH⁻", AQUEOUS, -230000, -10.8f, 0.001f, 0f, 17.0f, lucent));
 
     public static final RegistryObject<Chemical> SODIUM_ION = CHEMICALS.register("sodium_ion",
-            () -> new Chemical("Na⁺", AQUEOUS, -240100, 58.5f, 0.001f, 0f, 23.0f, 0xA0249AFF));
+            () -> new Chemical("Na⁺", AQUEOUS, -240100, 58.5f, 0.001f, 0f, 23.0f, lucent));
 
     public static final RegistryObject<Chemical> CHLORIDE = CHEMICALS.register("chloride",
             () -> new Chemical("Cl⁻", AQUEOUS, -167200, 56.5f, 0.001f, 0f, 35.5f, lucent));
@@ -53,5 +53,5 @@ public class Chemicals {
             () -> new Chemical("Cu", Chemical.State.MOLTEN_METAL, 0, 0, 0.1f, 25f, 63.55f, 0xFFFF5C00));
 
     public static final RegistryObject<Chemical> SODIUM_CHLORIDE = CHEMICALS.register("sodium_chloride",
-            () -> new Chemical("NaCl", SOLID, -411200, 72.1f, 0.027f, 50.5f, 58.5f, 0xB0372bff));
+            () -> new Chemical("NaCl", SOLID, -411200, 72.1f, 0.027f, 50.5f, 58.5f, lucent));
 }
